@@ -1,0 +1,19 @@
+{{- $scheme := ternary "https" "http" .Values.global.ingress.tls.enabled -}}
+{{- $port := int .Values.global.ingress.externalPort -}}
+{{- $standardPort := or (and (eq $scheme "http") (eq $port 80)) (and (eq $scheme "https") (eq $port 443)) -}}
+{{- $authority := .Values.global.hosts.shop -}}
+{{- if not $standardPort -}}
+{{- $authority = printf "%s:%d" $authority $port -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wordpress-config
+  namespace: {{ .Values.global.namespaces.store }}
+  labels:
+    app.kubernetes.io/name: wordpress
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+data:
+  WORDPRESS_CONFIG_EXTRA: |
+    define('WP_HOME', '{{ $scheme }}://{{ $authority }}');
+    define('WP_SITEURL', '{{ $scheme }}://{{ $authority }}');

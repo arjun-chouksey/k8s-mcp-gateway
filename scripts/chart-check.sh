@@ -75,6 +75,44 @@ ingresses.each do |item|
   abort "wrong TLS state for #{name}" unless has_tls == (environment == "vps")
 end
 
+wordpress = documents.find { |item| item["kind"] == "Deployment" && item.dig("metadata", "name") == "wordpress" }
+mariadb = documents.find { |item| item["kind"] == "StatefulSet" && item.dig("metadata", "name") == "mariadb" }
+wordpress_pvc = documents.find { |item| item["kind"] == "PersistentVolumeClaim" && item.dig("metadata", "name") == "wordpress-content" }
+abort "WordPress workload contract missing" unless wordpress && wordpress_pvc
+abort "MariaDB workload contract missing" unless mariadb
+abort "WordPress must use one Recreate replica" unless wordpress.dig("spec", "replicas") == 1 && wordpress.dig("spec", "strategy", "type") == "Recreate"
+abort "WordPress service-account token must be disabled" unless wordpress.dig("spec", "template", "spec", "automountServiceAccountToken") == false
+abort "MariaDB service-account token must be disabled" unless mariadb.dig("spec", "template", "spec", "automountServiceAccountToken") == false
+abort "MariaDB PVC retention is not explicit" unless mariadb.dig("spec", "persistentVolumeClaimRetentionPolicy") == {"whenDeleted" => "Retain", "whenScaled" => "Retain"}
+expected_site_url = environment == "local" ? "http://shop.127.0.0.1.nip.io:8080" : "https://shop.example.com"
+wordpress_config = documents.find { |item| item["kind"] == "ConfigMap" && item.dig("metadata", "name") == "wordpress-config" }
+abort "WordPress public URL mismatch" unless wordpress_config.dig("data", "WORDPRESS_CONFIG_EXTRA").include?(expected_site_url)
+
+{"wordpress" => wordpress, "mariadb" => mariadb}.each do |name, workload|
+  container = workload.dig("spec", "template", "spec", "containers", 0)
+  %w[startupProbe readinessProbe livenessProbe].each do |probe|
+    abort "#{name} #{probe} missing" unless container.key?(probe)
+  end
+  %w[requests limits].each do |boundary|
+    resources = container.dig("resources", boundary).to_h
+    abort "#{name} resource #{boundary} incomplete" unless resources.key?("cpu") && resources.key?("memory")
+  end
+end
+
+wordpress_secret_names = wordpress.dig("spec", "template", "spec", "containers", 0, "env").to_a.map do |entry|
+  entry.dig("valueFrom", "secretKeyRef", "name")
+end.compact.uniq
+mariadb_secret_names = mariadb.dig("spec", "template", "spec", "containers", 0, "env").to_a.map do |entry|
+  entry.dig("valueFrom", "secretKeyRef", "name")
+end.compact.uniq
+abort "WordPress Secret reference mismatch" unless wordpress_secret_names == ["store-wordpress"]
+abort "MariaDB Secret reference mismatch" unless mariadb_secret_names == ["store-mariadb"]
+
+expected_storage = environment == "local" ? "2Gi" : "10Gi"
+abort "WordPress storage size mismatch" unless wordpress_pvc.dig("spec", "resources", "requests", "storage") == expected_storage
+mariadb_claim = mariadb.dig("spec", "volumeClaimTemplates", 0)
+abort "MariaDB storage size mismatch" unless mariadb_claim.dig("spec", "resources", "requests", "storage") == expected_storage
+
 puts "PASS #{environment} manifest: namespaces, services, ingress, TLS, and private MCP exposure"
 RUBY
 }

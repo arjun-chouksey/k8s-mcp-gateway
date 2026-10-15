@@ -5,6 +5,7 @@ global:
     shop: shop.127.0.0.1.nip.io
   ingress:
     className: traefik
+    externalPort: 8080
     tls:
       enabled: false
       secretName: ""
@@ -15,11 +16,15 @@ wordpress:
   existingSecret: store-wordpress
   persistence: {size: 2Gi}
   probes: {path: /wp-login.php}
-  resources: {}
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
 mariadb:
   image: {repository: mariadb, tag: 11.8.3}
   service: {name: mariadb, port: 3306}
   existingSecret: store-mariadb
   persistence: {size: 2Gi}
   probes: {command: healthcheck.sh}
-  resources: {}
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 750m, memory: 768Mi}

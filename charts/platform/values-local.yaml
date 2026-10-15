@@ -3,6 +3,7 @@ global:
     shop: shop.127.0.0.1.nip.io
     app: app.127.0.0.1.nip.io
   ingress:
+    externalPort: 8080
     tls:
       enabled: false
       secretName: ""

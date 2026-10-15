@@ -3,6 +3,7 @@ global:
     shop: shop.example.com
     app: app.example.com
   ingress:
+    externalPort: 443
     tls:
       enabled: true
       secretName: platform-ingress-tls
