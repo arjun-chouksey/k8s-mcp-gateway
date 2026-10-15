@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: store
+  labels:
+    kubernetes.io/metadata.name: store
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp
+  labels:
+    kubernetes.io/metadata.name: mcp
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform
+  labels:
+    kubernetes.io/metadata.name: platform
+    app.kubernetes.io/part-of: k8s-mcp-gateway

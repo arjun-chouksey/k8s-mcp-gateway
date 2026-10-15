@@ -1,1 +1,34 @@
 .DS_Store
+
+# Local environment values; explicitly safe templates remain versionable.
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.template
+!.env.*.template
+
+# Secret-bearing local configuration (do not put real values in templates).
+/secrets/
+/config/secrets/
+*.secret.yaml
+*.secret.yml
+*.secrets.json
+*.local.yaml
+*.local.yml
+*.local.json
+
+# Private reference sources; never publish the assignment by accident.
+/private-references/
+/Urumi AI FDE Internship - Round 1_ MCP Gateway on Kubernetes.pdf
+
+# Generated local development artifacts.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+/web/dashboard/dist/
+/tmp/

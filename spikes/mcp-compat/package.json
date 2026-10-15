@@ -1,0 +1,10 @@
+{
+  "name": "k8s-mcp-gateway-compat-spike",
+  "private": true,
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/inspector": "2.11.0"
+  }
+}
