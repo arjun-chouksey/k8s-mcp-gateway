@@ -1,0 +1,10 @@
+global:
+  hosts:
+    shop: shop.127.0.0.1.nip.io
+    app: app.127.0.0.1.nip.io
+  ingress:
+    tls:
+      enabled: false
+      secretName: ""
+  storageClass: local-path
+  imagePullPolicy: IfNotPresent

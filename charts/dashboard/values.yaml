@@ -1,0 +1,10 @@
+global:
+  namespaces: {platform: platform}
+  hosts: {app: app.127.0.0.1.nip.io}
+  ingress:
+    className: traefik
+    tls: {enabled: false, secretName: ""}
+image: {repository: k8s-mcp-gateway/dashboard, tag: 0.1.0-local}
+service: {name: dashboard, port: 80}
+probes: {livenessPath: /healthz, readinessPath: /healthz}
+resources: {}

@@ -32,3 +32,6 @@ __pycache__/
 node_modules/
 /web/dashboard/dist/
 /tmp/
+
+# Helm packages generated from local file dependencies; Chart.lock is versioned.
+/charts/platform/charts/*.tgz

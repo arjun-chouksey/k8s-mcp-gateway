@@ -3,7 +3,10 @@ K3D_API_PORT ?= 6550
 K3D_HTTP_PORT ?= 8080
 K3D_IMAGE ?= rancher/k3s:v1.35.5-k3s1
 
-.PHONY: cluster-up cluster-verify cluster-context image-import cluster-down
+.PHONY: cluster-up cluster-verify cluster-context image-import cluster-down chart-check
+
+chart-check:
+	./scripts/chart-check.sh
 
 cluster-up:
 	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) K3D_API_PORT=$(K3D_API_PORT) K3D_HTTP_PORT=$(K3D_HTTP_PORT) K3D_IMAGE=$(K3D_IMAGE) ./scripts/cluster-up.sh

@@ -1,0 +1,25 @@
+global:
+  namespaces:
+    store: store
+  hosts:
+    shop: shop.127.0.0.1.nip.io
+  ingress:
+    className: traefik
+    tls:
+      enabled: false
+      secretName: ""
+  storageClass: local-path
+wordpress:
+  image: {repository: wordpress, tag: 6.8.3-php8.3-apache}
+  service: {name: wordpress, port: 80}
+  existingSecret: store-wordpress
+  persistence: {size: 2Gi}
+  probes: {path: /wp-login.php}
+  resources: {}
+mariadb:
+  image: {repository: mariadb, tag: 11.8.3}
+  service: {name: mariadb, port: 3306}
+  existingSecret: store-mariadb
+  persistence: {size: 2Gi}
+  probes: {command: healthcheck.sh}
+  resources: {}

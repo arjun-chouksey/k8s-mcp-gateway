@@ -1,0 +1,21 @@
+dependencies:
+- name: store
+  repository: file://../store
+  version: 0.1.0
+- name: woo-mcp
+  repository: file://../woo-mcp
+  version: 0.1.0
+- name: aux-mcp
+  repository: file://../aux-mcp
+  version: 0.1.0
+- name: gateway
+  repository: file://../gateway
+  version: 0.1.0
+- name: platform-db
+  repository: file://../platform-db
+  version: 0.1.0
+- name: dashboard
+  repository: file://../dashboard
+  version: 0.1.0
+digest: sha256:884b56836abe0875b7a88f1bcb7ae1d254e21fd41e61ff287bd163effd4d9062
+generated: "2026-10-15T13:59:50.491123+05:30"

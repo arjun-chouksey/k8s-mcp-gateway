@@ -1,0 +1,17 @@
+{{- $_ := required "platform-db.existingSecret is required" .Values.existingSecret -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.global.namespaces.platform }}
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: {{ .Values.service.port }}
+      targetPort: postgres

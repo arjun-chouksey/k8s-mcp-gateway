@@ -1,0 +1,7 @@
+global:
+  namespaces: {mcp: mcp}
+image: {repository: k8s-mcp-gateway/woo-mcp, tag: 0.1.0-local}
+service: {name: woocommerce-mcp, port: 8000}
+existingSecret: woo-mcp
+probes: {livenessPath: /healthz, readinessPath: /readyz}
+resources: {}

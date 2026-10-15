@@ -1,0 +1,17 @@
+{{- $_ := required "woo-mcp.existingSecret is required" .Values.existingSecret -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}
+  namespace: {{ .Values.global.namespaces.mcp }}
+  labels:
+    app.kubernetes.io/name: woo-mcp
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: woo-mcp
+  ports:
+    - name: mcp
+      port: {{ .Values.service.port }}
+      targetPort: mcp

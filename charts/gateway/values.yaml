@@ -1,0 +1,11 @@
+global:
+  namespaces: {platform: platform}
+  hosts: {app: app.127.0.0.1.nip.io}
+  ingress:
+    className: traefik
+    tls: {enabled: false, secretName: ""}
+image: {repository: k8s-mcp-gateway/gateway, tag: 0.1.0-local}
+service: {name: gateway, port: 8000}
+existingSecret: gateway
+probes: {livenessPath: /healthz, readinessPath: /readyz}
+resources: {}

@@ -1,0 +1,113 @@
+global:
+  namespaces:
+    store: store
+    mcp: mcp
+    platform: platform
+  hosts:
+    shop: shop.127.0.0.1.nip.io
+    app: app.127.0.0.1.nip.io
+  ingress:
+    className: traefik
+    tls:
+      enabled: false
+      secretName: ""
+  storageClass: local-path
+  imagePullPolicy: IfNotPresent
+
+store:
+  wordpress:
+    image:
+      repository: wordpress
+      tag: 6.8.3-php8.3-apache
+    service:
+      name: wordpress
+      port: 80
+    existingSecret: store-wordpress
+    persistence:
+      size: 2Gi
+    probes:
+      path: /wp-login.php
+    resources: {}
+  mariadb:
+    image:
+      repository: mariadb
+      tag: 11.8.3
+    service:
+      name: mariadb
+      port: 3306
+    existingSecret: store-mariadb
+    persistence:
+      size: 2Gi
+    probes:
+      command: healthcheck.sh
+    resources: {}
+
+woo-mcp:
+  image:
+    repository: k8s-mcp-gateway/woo-mcp
+    tag: 0.1.0-local
+  service:
+    name: woocommerce-mcp
+    port: 8000
+  existingSecret: woo-mcp
+  probes:
+    livenessPath: /healthz
+    readinessPath: /readyz
+  resources: {}
+
+aux-mcp:
+  image:
+    repository: k8s-mcp-gateway/aux-mcp
+    tag: 0.1.0-local
+  existingSecret: aux-mcp
+  currency:
+    service:
+      name: currency-mcp
+      port: 8000
+  policy:
+    service:
+      name: policy-mcp
+      port: 8000
+  probes:
+    livenessPath: /healthz
+    readinessPath: /readyz
+  resources: {}
+
+gateway:
+  image:
+    repository: k8s-mcp-gateway/gateway
+    tag: 0.1.0-local
+  service:
+    name: gateway
+    port: 8000
+  existingSecret: gateway
+  probes:
+    livenessPath: /healthz
+    readinessPath: /readyz
+  resources: {}
+
+platform-db:
+  image:
+    repository: postgres
+    tag: 17.6-alpine
+  service:
+    name: postgres
+    port: 5432
+  existingSecret: platform-postgres
+  persistence:
+    size: 2Gi
+  probes:
+    command: pg_isready
+  resources: {}
+
+dashboard:
+  image:
+    repository: k8s-mcp-gateway/dashboard
+    tag: 0.1.0-local
+  service:
+    name: dashboard
+    port: 80
+  probes:
+    livenessPath: /healthz
+    readinessPath: /healthz
+  resources: {}

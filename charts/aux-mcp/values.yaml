@@ -1,0 +1,10 @@
+global:
+  namespaces: {mcp: mcp}
+image: {repository: k8s-mcp-gateway/aux-mcp, tag: 0.1.0-local}
+existingSecret: aux-mcp
+currency:
+  service: {name: currency-mcp, port: 8000}
+policy:
+  service: {name: policy-mcp, port: 8000}
+probes: {livenessPath: /healthz, readinessPath: /readyz}
+resources: {}

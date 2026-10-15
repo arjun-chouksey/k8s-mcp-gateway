@@ -1,0 +1,35 @@
+{{- $wordpressSecret := required "store.wordpress.existingSecret is required" .Values.wordpress.existingSecret -}}
+{{- $mariadbSecret := required "store.mariadb.existingSecret is required" .Values.mariadb.existingSecret -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.wordpress.service.name }}
+  namespace: {{ .Values.global.namespaces.store }}
+  labels:
+    app.kubernetes.io/name: wordpress
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: wordpress
+  ports:
+    - name: http
+      port: {{ .Values.wordpress.service.port }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mariadb.service.name }}
+  namespace: {{ .Values.global.namespaces.store }}
+  labels:
+    app.kubernetes.io/name: mariadb
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mariadb
+  ports:
+    - name: mysql
+      port: {{ .Values.mariadb.service.port }}
+      targetPort: mysql
