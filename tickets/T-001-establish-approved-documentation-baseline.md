@@ -14,15 +14,15 @@ Import the exact approved source documents into the existing repository without 
 
 ## Exact implementation scope
 
-Inspect git status and current tracked files; copy approved HLD, LLD, ROADMAP, AGENTS, threat model and demo checklist without rewriting architecture. Add tickets index, prompts, STATUS, DECISIONS. Preserve existing README and docs/images. Add ignore rules for secrets, .env and private assignment source if needed. Record actual SHA/branch in STATUS after commit, not a guessed value.
+Inspect git status and current tracked files; copy approved HLD, LLD, ROADMAP, AGENTS, threat model, demo checklist, decisions, and tickets index without rewriting architecture. Preserve existing README and docs/images. Add ignore rules for secrets, .env and private assignment source if needed.
 
 ## Interfaces, data structures and contracts
 
-Authoritative order: original assignment > HLD > LLD > ROADMAP > security/demo notes > tickets. STATUS is operational state, not a source of architecture truth.
+Authoritative order: original assignment > HLD > LLD > ROADMAP > security/demo notes > tickets.
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-AGENTS.md; ROADMAP.md; docs/{HLD,LLD,THREAT_MODEL,DEMO,STATUS,DECISIONS,CODEX_PROMPTS}.md; tickets/*.md; .gitignore only if needed
+AGENTS.md; ROADMAP.md; docs/{HLD,LLD,THREAT_MODEL,DEMO,DECISIONS}.md; tickets/*.md; .gitignore only if needed
 
 ## Explicit non-goals / constraints
 
@@ -40,7 +40,7 @@ git ls-files README.md docs/images/kubernetes-architecture.png
 
 ## Acceptance criteria and Definition of Done
 
-Approved documents present byte-for-byte; existing README/diagram preserved; STATUS reports no built features; exact file additions checked with git diff --stat.
+Approved documents present; existing README/diagram preserved; exact file additions checked with git diff --stat.
 
 All ticket-specific tests actually executed/passed or clearly blocked; required negative tests completed where applicable; documentation/tests kept in sync; changed paths inspected for secrets and diff noise; no unapproved architecture deviation. Mark `VERIFIED` only after an independent review of evidence. 
 

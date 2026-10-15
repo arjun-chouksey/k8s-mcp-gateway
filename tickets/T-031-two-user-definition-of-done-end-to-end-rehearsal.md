@@ -22,7 +22,7 @@ All calls use actual deployed gateway; screenshots/logs are evidence not substit
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-docs/DEMO.md checkboxes with evidence links; tests/smoke/two-user-e2e.sh; docs/STATUS.md; screenshots in docs/evidence/ only sanitized
+docs/DEMO.md checkboxes with evidence links; tests/smoke/two-user-e2e.sh; screenshots in docs/evidence/ only sanitized
 
 ## Explicit non-goals / constraints
 

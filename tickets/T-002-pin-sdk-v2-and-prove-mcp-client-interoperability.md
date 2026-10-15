@@ -22,7 +22,7 @@ Document exact SDK methods, version, transport route, auth header, tool list/cal
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-spikes/mcp-compat/ (or services/gateway/tests/integration/test_mcp_transport.py); services/woo-mcp/pyproject.toml once selected; docs/STATUS.md; docs/DECISIONS.md only if selection deviates
+spikes/mcp-compat/ (or services/gateway/tests/integration/test_mcp_transport.py); services/woo-mcp/pyproject.toml once selected; docs/DECISIONS.md only if selection deviates
 
 ## Explicit non-goals / constraints
 

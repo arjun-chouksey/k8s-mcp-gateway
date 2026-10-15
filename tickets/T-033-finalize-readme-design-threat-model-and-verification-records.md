@@ -22,7 +22,7 @@ README is public entrypoint; HLD/LLD architecture remains locked unless approved
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-README.md; docs/{DEMO,THREAT_MODEL,STATUS,DECISIONS}.md; scripts/verify-docs.sh if useful
+README.md; docs/{DEMO,THREAT_MODEL,DECISIONS}.md; scripts/verify-docs.sh if useful
 
 ## Explicit non-goals / constraints
 

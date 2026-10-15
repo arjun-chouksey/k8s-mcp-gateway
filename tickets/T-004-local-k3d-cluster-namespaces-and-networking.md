@@ -22,7 +22,7 @@ Namespace names fixed: store, mcp, platform. Hosts initially shop.127.0.0.1.nip.
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-infra/namespaces.yaml; scripts/cluster-up.sh; Makefile; docs/STATUS.md; README setup section only if authorized
+infra/namespaces.yaml; scripts/cluster-up.sh; Makefile; README setup section only if authorized
 
 ## Explicit non-goals / constraints
 

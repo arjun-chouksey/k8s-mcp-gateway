@@ -22,7 +22,7 @@ Credential data consumed by Woo MCP only; gateway receives separate upstream bea
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-scripts/woo-credentials-setup.md or scripts/woo-credentials.sh when supported; docs/STATUS.md; tests/smoke/woo-api-auth.sh
+scripts/woo-credentials-setup.md or scripts/woo-credentials.sh when supported; tests/smoke/woo-api-auth.sh
 
 ## Explicit non-goals / constraints
 

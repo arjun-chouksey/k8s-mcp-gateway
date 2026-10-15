@@ -22,7 +22,7 @@ values-vps.yaml references real domain placeholders, TLS ingress, pinned registr
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-charts/platform/values-vps.yaml; scripts/deploy-vps.sh (non-executed template unless authorized); docs/DEPLOYMENT.md or README subsection (prefer README per assignment); docs/STATUS.md
+charts/platform/values-vps.yaml; scripts/deploy-vps.sh (non-executed template unless authorized); docs/DEPLOYMENT.md or README subsection (prefer README per assignment)
 
 ## Explicit non-goals / constraints
 

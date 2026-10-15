@@ -22,7 +22,7 @@ Provider adapter contract: get_completion(messages, tools) -> text and zero-or-m
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-spikes/llm-toolcalls/; docs/STATUS.md; optionally docs/DECISIONS.md if chosen provider/model impacts assumptions
+spikes/llm-toolcalls/; optionally docs/DECISIONS.md if chosen provider/model impacts assumptions
 
 ## Explicit non-goals / constraints
 

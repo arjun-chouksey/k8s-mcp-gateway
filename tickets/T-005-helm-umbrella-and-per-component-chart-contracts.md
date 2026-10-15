@@ -22,7 +22,7 @@ DNS: woocommerce-mcp.mcp.svc.cluster.local, wordpress.store.svc.cluster.local, p
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-charts/platform/{Chart.yaml,values.yaml,values-local.yaml,values-vps.yaml}; charts/{store,woo-mcp,aux-mcp,gateway,platform-db,dashboard}/; scripts/chart-check.sh; docs/STATUS.md
+charts/platform/{Chart.yaml,values.yaml,values-local.yaml,values-vps.yaml}; charts/{store,woo-mcp,aux-mcp,gateway,platform-db,dashboard}/; scripts/chart-check.sh
 
 ## Explicit non-goals / constraints
 
@@ -41,7 +41,7 @@ helm template urumi charts/platform -n platform -f charts/platform/values-vps.ya
 
 ## Acceptance criteria and Definition of Done
 
-All charts lint/render; namespaces and Secret references correct; diff is driven by values; exact shared interfaces frozen in STATUS.
+All charts lint/render; namespaces and Secret references correct; diff is driven by values; exact shared interfaces remain consistent with HLD/LLD.
 
 All ticket-specific tests actually executed/passed or clearly blocked; required negative tests completed where applicable; documentation/tests kept in sync; changed paths inspected for secrets and diff noise; no unapproved architecture deviation. Mark `VERIFIED` only after an independent review of evidence. 
 

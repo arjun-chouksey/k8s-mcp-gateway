@@ -4,7 +4,7 @@
 
 ## How to run tickets
 
-1. Review `AGENTS.md`, `docs/STATUS.md`, the chosen ticket, and only referenced HLD/LLD sections. Do not reread every doc and file for every task.
+1. Review `AGENTS.md`, the chosen ticket, and only referenced HLD/LLD sections. Do not reread every doc and file for every task.
 2. The user explicitly authorizes a specific ticket for implementation in a new Codex turn. Selecting a ticket is not approval for cloud spend, secret publication, destructive cleanup, a remote push or architecture change.
 3. One ticket per working session/branch. Implement, test, show exact output, report and request review.
 4. `CODE_COMPLETE` is not `VERIFIED`; status moves to `VERIFIED` only with actual evidence and a review.
@@ -104,5 +104,5 @@ Gates express verification targets, **not project status**. Multiple tickets can
 - Unit tests substantiate algorithms/contracts; integration tests exercise real SDK Streamable HTTP, DB, and authenticated HTTP; smoke tests exercise deployed Kubernetes and browser/external client flows.
 - Security tests must include invalid/revoked keys, forbidden roles, blocked network callers, secret non-disclosure, stale aliases and upstream failures.
 - For an unrun manual, VPS, LLM or client test, record `NOT_RUN (why)`; do not mark green.
-- Completion report links to commit or diff, test logs, evidence, blockers and approval IDs, then updates `docs/STATUS.md`. The ticket itself remains immutable implementation instructions apart from approved corrections; all status updates live in STATUS.
+- Completion reports state the commit or diff, test evidence, blockers, and architectural deviations. Ticket files remain implementation instructions rather than progress logs.
 - A final pass requires **A01–A20** fully VERIFIED; stand-outs/BONUS do not compensate for missing mandatory acceptance.

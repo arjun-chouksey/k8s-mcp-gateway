@@ -18,7 +18,7 @@ If sources conflict, **stop, identify the conflict and propose the smallest corr
 ## 2. Ticket execution scope
 
 1. Work on one approved implementation ticket at a time. A user's instruction to implement a ticket is approval to make normal local changes required by that ticket.
-2. Read the selected ticket, only the relevant HLD/LLD sections, and the existing source files and tests affected by the work. Do not routinely read or update `docs/STATUS.md` or `docs/DECISIONS.md`.
+2. Read the selected ticket, only the relevant HLD/LLD sections, and the existing source files and tests affected by the work. Read or update `docs/DECISIONS.md` only for significant architectural clarifications or deviations.
 3. Inspect repository status, branch, applicable files, existing tests and relevant package versions before editing. Avoid broad repeated repository reads.
 4. Implement the ticket directly as a small vertical slice. Do not create separate planning, documentation or review phases for routine ticket work, and avoid unrelated refactors or untested placeholder scaffolding.
 5. Stop and ask only when a required architectural decision is missing, the implementation conflicts with the approved HLD/LLD, a serious blocker requires user input, or the next action is destructive, creates credentials, deploys external resources or pushes commits.

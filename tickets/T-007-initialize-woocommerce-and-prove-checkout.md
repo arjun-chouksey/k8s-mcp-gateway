@@ -22,7 +22,7 @@ Store remains source of truth for orders/products. Credentials from precreated S
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-charts/store/templates/bootstrap-job.yaml if validated; scripts/store-bootstrap.sh; scripts/smoke-store.sh; docs/STATUS.md
+charts/store/templates/bootstrap-job.yaml if validated; scripts/store-bootstrap.sh; scripts/smoke-store.sh
 
 ## Explicit non-goals / constraints
 

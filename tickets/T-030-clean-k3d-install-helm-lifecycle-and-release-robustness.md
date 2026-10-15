@@ -22,7 +22,7 @@ Same chart templates for local/VPS values; three namespaces created first. Do no
 
 ## Expected files/modules (proposed; inspect actual tree first)
 
-Makefile; scripts/{build-images,deploy-local,smoke-local}.sh; charts/platform/*; tests/smoke/*; docs/STATUS.md
+Makefile; scripts/{build-images,deploy-local,smoke-local}.sh; charts/platform/*; tests/smoke/*
 
 ## Explicit non-goals / constraints
 
