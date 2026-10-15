@@ -78,13 +78,30 @@ end
 wordpress = documents.find { |item| item["kind"] == "Deployment" && item.dig("metadata", "name") == "wordpress" }
 mariadb = documents.find { |item| item["kind"] == "StatefulSet" && item.dig("metadata", "name") == "mariadb" }
 wordpress_pvc = documents.find { |item| item["kind"] == "PersistentVolumeClaim" && item.dig("metadata", "name") == "wordpress-content" }
+bootstrap = documents.find { |item| item["kind"] == "Job" && item.dig("metadata", "name") == "store-bootstrap" }
+bootstrap_config = documents.find { |item| item["kind"] == "ConfigMap" && item.dig("metadata", "name") == "store-bootstrap" }
 abort "WordPress workload contract missing" unless wordpress && wordpress_pvc
 abort "MariaDB workload contract missing" unless mariadb
+abort "store bootstrap contract missing" unless bootstrap && bootstrap_config
 abort "WordPress must use one Recreate replica" unless wordpress.dig("spec", "replicas") == 1 && wordpress.dig("spec", "strategy", "type") == "Recreate"
 abort "WordPress service-account token must be disabled" unless wordpress.dig("spec", "template", "spec", "automountServiceAccountToken") == false
 abort "MariaDB service-account token must be disabled" unless mariadb.dig("spec", "template", "spec", "automountServiceAccountToken") == false
 abort "MariaDB PVC retention is not explicit" unless mariadb.dig("spec", "persistentVolumeClaimRetentionPolicy") == {"whenDeleted" => "Retain", "whenScaled" => "Retain"}
+abort "bootstrap must run as a Helm hook" unless bootstrap.dig("metadata", "annotations", "helm.sh/hook") == "post-install,post-upgrade"
+abort "bootstrap service-account token must be disabled" unless bootstrap.dig("spec", "template", "spec", "automountServiceAccountToken") == false
+
+bootstrap_container = bootstrap.dig("spec", "template", "spec", "containers", 0)
+bootstrap_env = bootstrap_container["env"].to_a.to_h { |entry| [entry["name"], entry] }
 expected_site_url = environment == "local" ? "http://shop.127.0.0.1.nip.io:8080" : "https://shop.example.com"
+abort "bootstrap public URL mismatch" unless bootstrap_env.dig("SITE_URL", "value") == expected_site_url
+abort "bootstrap admin Secret mismatch" unless %w[WORDPRESS_ADMIN_USER WORDPRESS_ADMIN_PASSWORD WORDPRESS_ADMIN_EMAIL].all? do |name|
+  bootstrap_env.dig(name, "valueFrom", "secretKeyRef", "name") == "store-wordpress-admin"
+end
+%w[requests limits].each do |boundary|
+  resources = bootstrap_container.dig("resources", boundary).to_h
+  abort "bootstrap resource #{boundary} incomplete" unless resources.key?("cpu") && resources.key?("memory")
+end
+
 wordpress_config = documents.find { |item| item["kind"] == "ConfigMap" && item.dig("metadata", "name") == "wordpress-config" }
 abort "WordPress public URL mismatch" unless wordpress_config.dig("data", "WORDPRESS_CONFIG_EXTRA").include?(expected_site_url)
 
