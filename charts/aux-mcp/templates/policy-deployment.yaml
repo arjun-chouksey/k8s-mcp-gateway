@@ -1,0 +1,52 @@
+{{- $_ := required "aux-mcp.existingSecret is required" .Values.existingSecret -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-mcp
+  namespace: {{ .Values.global.namespaces.mcp }}
+  labels:
+    app.kubernetes.io/name: policy-mcp
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: policy-mcp}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: policy-mcp
+        app.kubernetes.io/part-of: k8s-mcp-gateway
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: policy-mcp
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "policy_mcp"]
+          ports:
+            - {name: mcp, containerPort: 8000, protocol: TCP}
+          env:
+            - name: POLICY_MCP_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: POLICY_MCP_BEARER_TOKEN}
+            - name: MCP_ALLOWED_HOSTS
+              value: {{ printf "%s.%s.svc.cluster.local:*,%s.%s.svc:*,127.0.0.1:*,localhost:*" .Values.policy.service.name .Values.global.namespaces.mcp .Values.policy.service.name .Values.global.namespaces.mcp | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+            readOnlyRootFilesystem: true
+          startupProbe:
+            httpGet: {path: {{ .Values.probes.readinessPath }}, port: mcp}
+            failureThreshold: 12
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: {{ .Values.probes.livenessPath }}, port: mcp}
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: {{ .Values.probes.readinessPath }}, port: mcp}
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

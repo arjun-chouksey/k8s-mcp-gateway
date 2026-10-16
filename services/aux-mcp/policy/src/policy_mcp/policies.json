@@ -1,0 +1,21 @@
+{
+  "version": "2026-10-demo-v1",
+  "label": "Example store policies for demonstration",
+  "policies": {
+    "refunds": {
+      "title": "Refund policy",
+      "summary": "Refund requests are accepted within 14 days for unused virtual products.",
+      "details": "Contact support with the order number. Approved refunds return to the original payment method. This is demonstration policy text."
+    },
+    "shipping": {
+      "title": "Shipping policy",
+      "summary": "The demonstration catalog contains virtual products and requires no shipping.",
+      "details": "No physical parcel or tracking number is created for virtual products. This is demonstration policy text."
+    },
+    "privacy": {
+      "title": "Privacy policy",
+      "summary": "Order information is used only to complete and support the demonstration purchase.",
+      "details": "Customer information is not included in policy MCP results. This is demonstration policy text."
+    }
+  }
+}

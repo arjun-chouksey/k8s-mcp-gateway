@@ -3,7 +3,7 @@ K3D_API_PORT ?= 6550
 K3D_HTTP_PORT ?= 8080
 K3D_IMAGE ?= rancher/k3s:v1.35.5-k3s1
 
-.PHONY: cluster-up cluster-verify cluster-context image-import cluster-down chart-check store-secrets store-deploy store-persistence store-admin store-bootstrap store-smoke order-persistence woo-api-secret woo-api-auth woo-client-test woo-client-live woo-mcp-test woo-mcp-inspector
+.PHONY: cluster-up cluster-verify cluster-context image-import cluster-down chart-check store-secrets store-deploy store-persistence store-admin store-bootstrap store-smoke order-persistence woo-api-secret woo-api-auth woo-client-test woo-client-live woo-mcp-test woo-mcp-inspector currency-mcp-test currency-mcp-inspector policy-mcp-test policy-mcp-inspector
 
 chart-check:
 	./scripts/chart-check.sh
@@ -49,6 +49,18 @@ woo-mcp-test:
 
 woo-mcp-inspector:
 	./tests/smoke/woo-mcp-inspector.sh
+
+currency-mcp-test:
+	.venv/bin/python -m pytest services/aux-mcp/currency/tests -q
+
+currency-mcp-inspector:
+	./tests/smoke/currency-mcp-inspector.sh
+
+policy-mcp-test:
+	.venv/bin/python -m pytest services/aux-mcp/policy/tests -q
+
+policy-mcp-inspector:
+	./tests/smoke/policy-mcp-inspector.sh
 
 cluster-up:
 	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) K3D_API_PORT=$(K3D_API_PORT) K3D_HTTP_PORT=$(K3D_HTTP_PORT) K3D_IMAGE=$(K3D_IMAGE) ./scripts/cluster-up.sh
