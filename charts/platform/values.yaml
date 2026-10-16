@@ -65,14 +65,18 @@ woo-mcp:
   image:
     repository: k8s-mcp-gateway/woo-mcp
     tag: 0.1.0-local
+    pullPolicy: IfNotPresent
   service:
     name: woocommerce-mcp
     port: 8000
   existingSecret: woo-mcp
+  storeTimezone: Asia/Kolkata
   probes:
     livenessPath: /healthz
     readinessPath: /readyz
-  resources: {}
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
 
 aux-mcp:
   image:
