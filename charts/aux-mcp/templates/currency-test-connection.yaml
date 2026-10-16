@@ -1,0 +1,40 @@
+{{- $_ := required "aux-mcp.existingSecret is required" .Values.existingSecret -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: currency-mcp-test-connection
+  namespace: {{ .Values.global.namespaces.mcp }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: currency-mcp-test-client
+        app.kubernetes.io/part-of: k8s-mcp-gateway
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: client
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "currency_mcp.smoke"]
+          env:
+            - name: MCP_URL
+              value: "http://{{ .Values.currency.service.name }}.{{ .Values.global.namespaces.mcp }}.svc.cluster.local:{{ .Values.currency.service.port }}/mcp"
+            - name: CURRENCY_MCP_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.existingSecret }}, key: CURRENCY_MCP_BEARER_TOKEN}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+            readOnlyRootFilesystem: true
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 256Mi}

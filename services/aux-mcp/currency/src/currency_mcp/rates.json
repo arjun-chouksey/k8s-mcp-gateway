@@ -1,0 +1,11 @@
+{
+  "version": "2026-10-demo-v1",
+  "label": "Fixed demonstration rates - NOT live FX",
+  "base_currency": "INR",
+  "rates_per_inr": {
+    "INR": "1",
+    "EUR": "0.0105",
+    "USD": "0.0120",
+    "GBP": "0.0091"
+  }
+}
