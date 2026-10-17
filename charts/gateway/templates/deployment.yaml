@@ -23,6 +23,12 @@ spec:
           env:
             - name: DATABASE_URL
               valueFrom: {secretKeyRef: {name: {{ .Values.databaseExistingSecret }}, key: database-url}}
+            - name: API_KEY_PEPPER
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: api-key-pepper}}
+            - name: UPSTREAM_CREDENTIAL_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: upstream-credential-key}}
+            - {name: UPSTREAM_INTERNAL_ALLOWLIST, value: {{ join "," .Values.upstream.internalAllowlist | quote }}}
+            - {name: UPSTREAM_REFRESH_SECONDS, value: {{ .Values.upstream.refreshSeconds | quote }}}
             - {name: ALLOWED_ORIGIN, value: {{ .Values.auth.allowedOrigin | quote }}}
             - {name: COOKIE_SECURE, value: {{ .Values.auth.cookieSecure | quote }}}
             - {name: SESSION_TTL_SECONDS, value: {{ .Values.auth.sessionTtlSeconds | quote }}}

@@ -9,6 +9,12 @@ service: {name: gateway, port: 8000}
 existingSecret: gateway
 databaseExistingSecret: platform-postgres
 bootstrapExistingSecret: gateway-bootstrap-admin
+upstream:
+  refreshSeconds: 30
+  internalAllowlist:
+    - woocommerce-mcp.mcp.svc.cluster.local:8000
+    - currency-mcp.mcp.svc.cluster.local:8000
+    - policy-mcp.mcp.svc.cluster.local:8000
 probes: {livenessPath: /healthz, readinessPath: /readyz}
 resources:
   requests: {cpu: 50m, memory: 128Mi}

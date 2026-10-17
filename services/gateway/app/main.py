@@ -7,27 +7,48 @@ from sqlalchemy import text
 import uvicorn
 
 from app.api.auth import create_auth_router
+from app.api.keys import create_keys_router
+from app.api.servers import create_servers_router
 from app.api.team import create_team_router
 from app.database import make_engine, make_session_factory
+from app.mcp_gateway.catalog import CatalogService
 from app.settings import AppSettings
+from app.security.mcp_auth import MCPApiKeyMiddleware
+from app.security.upstream_crypto import CredentialCipher
 
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
     config = settings or AppSettings.from_env()
     engine = make_engine(config.database_url)
     sessions = make_session_factory(engine)
+    cipher = CredentialCipher(config.upstream_credential_key)
+    catalog = CatalogService(
+        sessions, cipher, refresh_seconds=config.upstream_refresh_seconds,
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        yield
-        await engine.dispose()
+        catalog.start()
+        try:
+            yield
+        finally:
+            await catalog.stop()
+            await engine.dispose()
 
     app = FastAPI(title="Team MCP Gateway", version="0.1.0", lifespan=lifespan)
     app.state.engine = engine
     app.state.sessions = sessions
     app.state.settings = config
+    app.state.api_key_pepper = config.api_key_pepper.encode()
+    app.state.upstream_cipher = cipher
+    app.state.catalog = catalog
     app.include_router(create_auth_router(config))
+    app.include_router(create_keys_router())
+    app.include_router(create_servers_router())
     app.include_router(create_team_router())
+    app.add_middleware(
+        MCPApiKeyMiddleware, session_factory=sessions, pepper=config.api_key_pepper.encode(),
+    )
 
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict[str, str]:

@@ -56,6 +56,8 @@ async def clean_identity_tables(database_url: str):
 def settings(database_url: str) -> AppSettings:
     return AppSettings(
         database_url=database_url, allowed_origin=ORIGIN, cookie_secure=False,
+        api_key_pepper="test-pepper-that-is-at-least-32-characters",
+        upstream_credential_key="MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
         session_ttl_seconds=3600, invite_ttl_seconds=3600,
         login_max_failures=5, login_window_seconds=300,
     )
