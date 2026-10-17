@@ -7,6 +7,7 @@ from sqlalchemy import text
 import uvicorn
 
 from app.api.auth import create_auth_router
+from app.api.team import create_team_router
 from app.database import make_engine, make_session_factory
 from app.settings import AppSettings
 
@@ -26,6 +27,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.state.sessions = sessions
     app.state.settings = config
     app.include_router(create_auth_router(config))
+    app.include_router(create_team_router())
 
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict[str, str]:
