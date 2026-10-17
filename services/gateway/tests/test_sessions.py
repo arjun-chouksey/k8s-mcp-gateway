@@ -50,6 +50,7 @@ def settings(database_url: str, **overrides) -> AppSettings:
         database_url=database_url, allowed_origin="http://app.test",
         cookie_secure=False, api_key_pepper="test-pepper-that-is-at-least-32-characters",
         upstream_credential_key="MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
+        internal_jwt_secret="test-internal-jwt-secret-at-least-32-characters",
         session_ttl_seconds=3600,
         login_max_failures=2, login_window_seconds=300,
     )

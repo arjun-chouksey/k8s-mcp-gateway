@@ -16,6 +16,7 @@ dependencies = [
   "mcp==2.3.0",
   "psycopg[binary]==3.2.10",
   "pydantic==2.14.1",
+  "PyJWT==2.15.1",
   "SQLAlchemy==2.0.44",
   "uvicorn==0.54.0",
 ]

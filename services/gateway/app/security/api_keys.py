@@ -22,7 +22,8 @@ class ApiKeyActor:
     id: UUID
     email: str
     role: str
-    key_id: UUID
+    key_id: UUID | None
+    channel: str
 
 
 @dataclass(frozen=True)
@@ -83,4 +84,6 @@ async def authenticate_api_key(
         return None
     record.last_used_at = datetime.now(timezone.utc)
     await db.commit()
-    return ApiKeyActor(id=user.id, email=user.email, role=user.role, key_id=record.id)
+    return ApiKeyActor(
+        id=user.id, email=user.email, role=user.role, key_id=record.id, channel="mcp",
+    )

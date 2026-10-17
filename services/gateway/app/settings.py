@@ -35,6 +35,7 @@ class AppSettings:
     cookie_secure: bool
     api_key_pepper: str
     upstream_credential_key: str
+    internal_jwt_secret: str
     upstream_internal_allowlist: tuple[str, ...] = (
         "woocommerce-mcp.mcp.svc.cluster.local:8000",
         "currency-mcp.mcp.svc.cluster.local:8000",
@@ -63,6 +64,9 @@ class AppSettings:
         upstream_credential_key = os.getenv("UPSTREAM_CREDENTIAL_KEY", "")
         if not upstream_credential_key:
             raise RuntimeError("UPSTREAM_CREDENTIAL_KEY is required")
+        internal_jwt_secret = os.getenv("INTERNAL_JWT_SECRET", "")
+        if len(internal_jwt_secret) < 32:
+            raise RuntimeError("INTERNAL_JWT_SECRET must be at least 32 characters")
         allowlist = tuple(filter(None, (
             value.strip() for value in os.getenv(
                 "UPSTREAM_INTERNAL_ALLOWLIST",
@@ -79,6 +83,7 @@ class AppSettings:
             cookie_secure=_bool_env("COOKIE_SECURE", True),
             api_key_pepper=api_key_pepper,
             upstream_credential_key=upstream_credential_key,
+            internal_jwt_secret=internal_jwt_secret,
             upstream_internal_allowlist=allowlist,
             session_ttl_seconds=session_ttl,
             invite_ttl_seconds=invite_ttl,

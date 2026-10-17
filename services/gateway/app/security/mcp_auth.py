@@ -7,16 +7,19 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from starlette.responses import JSONResponse
 
 from app.security.api_keys import authenticate_api_key
+from app.security.internal_jwt import authenticate_internal_jwt
 
 
 class MCPApiKeyMiddleware:
     def __init__(
         self, app: Callable[..., Awaitable[None]],
         session_factory: async_sessionmaker[AsyncSession], pepper: bytes,
+        internal_jwt_secret: str,
     ) -> None:
         self.app = app
         self.session_factory = session_factory
         self.pepper = pepper
+        self.internal_jwt_secret = internal_jwt_secret
 
     async def __call__(
         self, scope: dict[str, Any], receive: Callable[..., Awaitable[Any]],
@@ -32,7 +35,12 @@ class MCPApiKeyMiddleware:
         actor = None
         if separator and scheme.lower() == "bearer" and plaintext and " " not in plaintext:
             async with self.session_factory() as db:
-                actor = await authenticate_api_key(db, plaintext, self.pepper)
+                if plaintext.startswith("mcpgw_"):
+                    actor = await authenticate_api_key(db, plaintext, self.pepper)
+                else:
+                    actor = await authenticate_internal_jwt(
+                        db, plaintext, self.internal_jwt_secret,
+                    )
         if actor is None:
             response = JSONResponse(
                 {"detail": "Invalid API key"}, status_code=401,

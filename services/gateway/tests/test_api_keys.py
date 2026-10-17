@@ -58,6 +58,7 @@ def settings(database_url: str) -> AppSettings:
         database_url=database_url, allowed_origin=ORIGIN, cookie_secure=False,
         api_key_pepper=PEPPER, session_ttl_seconds=3600, invite_ttl_seconds=3600,
         upstream_credential_key="MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
+        internal_jwt_secret="test-internal-jwt-secret-at-least-32-characters",
         login_max_failures=5, login_window_seconds=300,
     )
 

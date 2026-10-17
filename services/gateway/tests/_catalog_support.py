@@ -10,7 +10,7 @@ import pytest_asyncio
 from sqlalchemy import delete
 
 from app.database import make_engine, make_session_factory
-from app.models import Upstream
+from app.models import Upstream, User
 
 
 @pytest.fixture(scope="module")
@@ -32,5 +32,6 @@ async def clean_catalog(catalog_database_url: str):
     sessions = make_session_factory(engine)
     async with sessions() as db:
         await db.execute(delete(Upstream))
+        await db.execute(delete(User))
         await db.commit()
     await engine.dispose()
