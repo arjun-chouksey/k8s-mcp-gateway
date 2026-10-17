@@ -1,9 +1,12 @@
 global:
   namespaces: {platform: platform}
   storageClass: local-path
+  imagePullPolicy: IfNotPresent
 image: {repository: postgres, tag: 17.6-alpine}
 service: {name: postgres, port: 5432}
 existingSecret: platform-postgres
 persistence: {size: 2Gi}
 probes: {command: pg_isready}
-resources: {}
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: 500m, memory: 512Mi}

@@ -1,0 +1,54 @@
+{{- $_ := required "platform-db.existingSecret is required" .Values.existingSecret -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: {{ .Values.global.namespaces.platform }}
+  labels: {app.kubernetes.io/name: postgres, app.kubernetes.io/part-of: k8s-mcp-gateway}
+spec:
+  serviceName: {{ .Values.service.name }}
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: postgres}
+  persistentVolumeClaimRetentionPolicy: {whenDeleted: Retain, whenScaled: Retain}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: postgres, app.kubernetes.io/part-of: k8s-mcp-gateway}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: postgres
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          ports: [{name: postgres, containerPort: {{ .Values.service.port }}}]
+          env:
+            - {name: POSTGRES_DB, valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: database}}}
+            - {name: POSTGRES_USER, valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: username}}}
+            - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: password}}}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pgdata}
+          startupProbe:
+            exec: {command: [sh, -ec, 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec: {command: [sh, -ec, 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']}
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec: {command: [sh, -ec, 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']}
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext: {allowPrivilegeEscalation: false}
+          volumeMounts: [{name: postgres-data, mountPath: /var/lib/postgresql/data}]
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+        labels: {app.kubernetes.io/name: postgres, app.kubernetes.io/part-of: k8s-mcp-gateway}
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: {{ .Values.global.storageClass }}
+        resources: {requests: {storage: {{ .Values.persistence.size }}}}

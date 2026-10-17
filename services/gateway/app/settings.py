@@ -1,0 +1,61 @@
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class DatabaseSettings:
+    url: str
+
+    @classmethod
+    def from_env(cls) -> DatabaseSettings:
+        url = os.getenv("DATABASE_URL", "").strip()
+        if not url:
+            raise RuntimeError("Missing required environment variable: DATABASE_URL")
+        if not url.startswith(("postgresql://", "postgresql+psycopg://")):
+            raise RuntimeError("DATABASE_URL must use PostgreSQL")
+        return cls(url=url)
+
+
+def _bool_env(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized not in {"true", "false"}:
+        raise RuntimeError(f"{name} must be true or false")
+    return normalized == "true"
+
+
+@dataclass(frozen=True)
+class AppSettings:
+    database_url: str
+    allowed_origin: str
+    cookie_secure: bool
+    session_ttl_seconds: int = 28_800
+    invite_ttl_seconds: int = 86_400
+    login_max_failures: int = 5
+    login_window_seconds: int = 300
+
+    @classmethod
+    def from_env(cls) -> AppSettings:
+        database_url = DatabaseSettings.from_env().url
+        allowed_origin = os.getenv("ALLOWED_ORIGIN", "").strip().rstrip("/")
+        if not allowed_origin.startswith(("http://", "https://")):
+            raise RuntimeError("ALLOWED_ORIGIN must be an absolute HTTP(S) origin")
+        session_ttl = int(os.getenv("SESSION_TTL_SECONDS", "28800"))
+        invite_ttl = int(os.getenv("INVITE_TTL_SECONDS", "86400"))
+        max_failures = int(os.getenv("LOGIN_MAX_FAILURES", "5"))
+        window = int(os.getenv("LOGIN_WINDOW_SECONDS", "300"))
+        if min(session_ttl, invite_ttl, max_failures, window) <= 0:
+            raise RuntimeError("session and login throttling settings must be positive")
+        return cls(
+            database_url=database_url,
+            allowed_origin=allowed_origin,
+            cookie_secure=_bool_env("COOKIE_SECURE", True),
+            session_ttl_seconds=session_ttl,
+            invite_ttl_seconds=invite_ttl,
+            login_max_failures=max_failures,
+            login_window_seconds=window,
+        )
