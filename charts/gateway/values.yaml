@@ -7,5 +7,28 @@ global:
 image: {repository: k8s-mcp-gateway/gateway, tag: 0.1.0-local}
 service: {name: gateway, port: 8000}
 existingSecret: gateway
+databaseExistingSecret: platform-postgres
+bootstrapExistingSecret: gateway-bootstrap-admin
 probes: {livenessPath: /healthz, readinessPath: /readyz}
-resources: {}
+resources:
+  requests: {cpu: 50m, memory: 128Mi}
+  limits: {cpu: 500m, memory: 512Mi}
+auth:
+  allowedOrigin: http://app.127.0.0.1.nip.io:8080
+  cookieSecure: false
+  sessionTtlSeconds: 28800
+  inviteTtlSeconds: 86400
+  loginMaxFailures: 5
+  loginWindowSeconds: 300
+bootstrap:
+  enabled: true
+  ttlSecondsAfterFinished: 3600
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+migrations:
+  enabled: true
+  ttlSecondsAfterFinished: 3600
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}

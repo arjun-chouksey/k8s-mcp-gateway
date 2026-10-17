@@ -46,6 +46,9 @@ gateway:
   image:
     repository: ghcr.io/arjun-chouksey/k8s-mcp-gateway/gateway
     tag: 0.1.0
+  auth:
+    allowedOrigin: https://app.example.com
+    cookieSecure: true
 
 platform-db:
   persistence:
