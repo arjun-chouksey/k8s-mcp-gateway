@@ -35,3 +35,19 @@ node_modules/
 
 # Helm packages generated from local file dependencies; Chart.lock is versioned.
 /charts/platform/charts/*.tgz
+
+# Local engineering workflow and planning.
+/AGENTS.md
+/ROADMAP.md
+/Makefile
+/tickets/
+/spikes/
+/scripts/
+/tests/
+
+# Internal architecture and planning documents.
+/docs/HLD.md
+/docs/LLD.md
+/docs/DECISIONS.md
+/docs/DEMO.md
+/docs/STATUS.md
