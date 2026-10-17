@@ -58,7 +58,7 @@ def normalize_email(value: str) -> str:
     email = value.strip().lower()
     local, separator, domain = email.partition("@")
     if not separator or not local or not domain or " " in email or len(email) > 320:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid email")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Invalid email")
     return email
 
 
