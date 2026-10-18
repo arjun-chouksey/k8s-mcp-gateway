@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -136,7 +136,12 @@ def create_servers_router() -> APIRouter:
     async def list_servers(
         db: AsyncSession = Depends(database), _actor: SessionActor = Depends(current_actor),
     ) -> list[ServerResponse]:
-        rows = (await db.scalars(select(Upstream).order_by(Upstream.slug))).all()
+        rows = (await db.scalars(
+            select(Upstream).order_by(
+                case((Upstream.slug == "woo", 0), else_=1),
+                Upstream.created_at, Upstream.slug,
+            )
+        )).all()
         return [await response_for(db, upstream) for upstream in rows]
 
     @router.post("/api/servers", response_model=ServerResponse, status_code=status.HTTP_201_CREATED)

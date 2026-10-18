@@ -32,6 +32,19 @@ bootstrap:
   resources:
     requests: {cpu: 25m, memory: 64Mi}
     limits: {cpu: 250m, memory: 256Mi}
+upstreamBootstrap:
+  enabled: true
+  existingSecret: gateway-upstreams
+  credentialKey: woo-credential
+  slug: woo
+  displayName: WooCommerce
+  url: http://woocommerce-mcp.mcp.svc.cluster.local:8000/mcp
+  connectTimeoutMs: 3000
+  callTimeoutMs: 20000
+  ttlSecondsAfterFinished: 3600
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
 migrations:
   enabled: true
   ttlSecondsAfterFinished: 3600

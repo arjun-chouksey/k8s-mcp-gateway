@@ -1,0 +1,49 @@
+{{- if .Values.upstreamBootstrap.enabled }}
+{{- $_ := required "gateway.databaseExistingSecret is required" .Values.databaseExistingSecret -}}
+{{- $_ := required "gateway.existingSecret is required" .Values.existingSecret -}}
+{{- $_ := required "gateway.upstreamBootstrap.existingSecret is required" .Values.upstreamBootstrap.existingSecret -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gateway-bootstrap-upstream
+  namespace: {{ .Values.global.namespaces.platform }}
+  labels: {app.kubernetes.io/name: gateway-bootstrap-upstream, app.kubernetes.io/part-of: k8s-mcp-gateway}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "6"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: {{ .Values.upstreamBootstrap.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: gateway-bootstrap-upstream, app.kubernetes.io/part-of: k8s-mcp-gateway}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: bootstrap
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          command: [python, -m, app.bootstrap_upstream]
+          env:
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.databaseExistingSecret }}, key: database-url}}
+            - name: UPSTREAM_CREDENTIAL_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: upstream-credential-key}}
+            - name: BOOTSTRAP_UPSTREAM_CREDENTIAL
+              valueFrom: {secretKeyRef: {name: {{ .Values.upstreamBootstrap.existingSecret }}, key: {{ .Values.upstreamBootstrap.credentialKey }}}}
+            - {name: BOOTSTRAP_UPSTREAM_SLUG, value: {{ .Values.upstreamBootstrap.slug | quote }}}
+            - {name: BOOTSTRAP_UPSTREAM_DISPLAY_NAME, value: {{ .Values.upstreamBootstrap.displayName | quote }}}
+            - {name: BOOTSTRAP_UPSTREAM_URL, value: {{ .Values.upstreamBootstrap.url | quote }}}
+            - {name: BOOTSTRAP_UPSTREAM_CONNECT_TIMEOUT_MS, value: {{ .Values.upstreamBootstrap.connectTimeoutMs | quote }}}
+            - {name: BOOTSTRAP_UPSTREAM_CALL_TIMEOUT_MS, value: {{ .Values.upstreamBootstrap.callTimeoutMs | quote }}}
+          resources:
+            {{- toYaml .Values.upstreamBootstrap.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
+{{- end }}
