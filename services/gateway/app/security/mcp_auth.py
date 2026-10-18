@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+import logging
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -8,6 +9,9 @@ from starlette.responses import JSONResponse
 
 from app.security.api_keys import authenticate_api_key
 from app.security.internal_jwt import authenticate_internal_jwt
+
+
+logger = logging.getLogger(__name__)
 
 
 class MCPApiKeyMiddleware:
@@ -42,6 +46,7 @@ class MCPApiKeyMiddleware:
                         db, plaintext, self.internal_jwt_secret,
                     )
         if actor is None:
+            logger.warning("Rejected unauthenticated MCP request")
             response = JSONResponse(
                 {"detail": "Invalid API key"}, status_code=401,
                 headers={"WWW-Authenticate": "Bearer"},

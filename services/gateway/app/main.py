@@ -8,6 +8,7 @@ from sqlalchemy import text
 import uvicorn
 
 from app.api.auth import create_auth_router
+from app.api.audit import create_audit_router
 from app.api.keys import create_keys_router
 from app.api.servers import create_servers_router
 from app.api.team import create_team_router
@@ -56,6 +57,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.state.upstream_cipher = cipher
     app.state.catalog = catalog
     app.include_router(create_auth_router(config))
+    app.include_router(create_audit_router())
     app.include_router(create_keys_router())
     app.include_router(create_servers_router())
     app.include_router(create_team_router())

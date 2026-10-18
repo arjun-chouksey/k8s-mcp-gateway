@@ -14,7 +14,14 @@ from test_api_keys import (
 
 
 @pytest.mark.asyncio
-async def test_every_mcp_request_rechecks_key_and_revocation_is_immediate(database_url: str):
+async def test_every_mcp_request_rechecks_key_and_revocation_is_immediate(
+    database_url: str, monkeypatch: pytest.MonkeyPatch,
+):
+    security_logs: list[str] = []
+    monkeypatch.setattr(
+        "app.security.api_keys.logger.warning",
+        lambda message, *args: security_logs.append(message % args),
+    )
     _, member_id = await create_users(database_url)
     app = create_app(settings(database_url))
     transport = httpx.ASGITransport(app=app)
@@ -52,6 +59,11 @@ async def test_every_mcp_request_rechecks_key_and_revocation_is_immediate(databa
             assert (await admin.post(
                 "/mcp", headers={"Authorization": f"Bearer {member_key['key']}"},
             )).status_code == 401
+            logged = "\n".join(security_logs)
+            assert f"user_id={member_id}" in logged
+            assert f"key_id={member_key['id']}" in logged
+            assert "reason=revoked" in logged
+            assert member_key["key"] not in logged
             assert (await admin.post(
                 "/mcp", headers={"Authorization": f"Bearer {admin_key['key']}"},
             )).status_code != 401
@@ -69,3 +81,6 @@ async def test_every_mcp_request_rechecks_key_and_revocation_is_immediate(databa
             assert (await admin.post(
                 "/mcp", headers={"Authorization": f"Bearer {inactive_key['key']}"},
             )).status_code == 401
+            logged = "\n".join(security_logs)
+            assert "reason=inactive_user" in logged
+            assert inactive_key["key"] not in logged

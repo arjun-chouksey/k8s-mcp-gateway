@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import re
 import secrets
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from app.models import ApiKey, User
 
 
 KEY_PREFIX_RE = re.compile(r"^[a-f0-9]{12}$")
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,12 @@ async def authenticate_api_key(
         not digest_matches or record is None or user is None
         or record.revoked_at is not None or not user.active
     ):
+        if digest_matches and record is not None and user is not None:
+            reason = "revoked" if record.revoked_at is not None else "inactive_user"
+            logger.warning(
+                "Rejected identified API key user_id=%s key_id=%s reason=%s",
+                user.id, record.id, reason,
+            )
         return None
     record.last_used_at = datetime.now(timezone.utc)
     await db.commit()

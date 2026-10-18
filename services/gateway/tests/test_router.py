@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from uuid import uuid4
-
 from mcp.types import CallToolResult, TextContent
 import pytest
 from sqlalchemy import select
@@ -55,7 +53,7 @@ async def setup_router(url: str):
             }, output_schema=None, annotations=None, definition_hash="a" * 64,
         ))
         await db.commit()
-        actor = ApiKeyActor(user.id, user.email, user.role, uuid4(), "mcp")
+        actor = ApiKeyActor(user.id, user.email, user.role, None, "mcp")
         upstream_id = upstream.id
     catalog = CatalogService(sessions, cipher)
     router = GatewayRouter(sessions, catalog, cipher, adapter_factory=FakeAdapter)
