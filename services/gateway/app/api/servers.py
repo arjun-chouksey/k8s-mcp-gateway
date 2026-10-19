@@ -99,6 +99,15 @@ class ServerResponse(BaseModel):
     updated_at: datetime
 
 
+class ServerToolResponse(BaseModel):
+    public_alias: str
+    original_name: str
+    description: str | None
+    input_schema: dict
+    output_schema: dict | None
+    annotations: dict | None
+
+
 def validate_auth_fields(
     auth_type: str, auth_header: str | None, credential: str | None, *, require_credential: bool,
 ) -> None:
@@ -177,6 +186,24 @@ def create_servers_router() -> APIRouter:
         if upstream.enabled:
             request.app.state.catalog.request_refresh(upstream.id)
         return await response_for(db, upstream)
+
+    @router.get("/api/servers/{server_id}/tools", response_model=list[ServerToolResponse])
+    async def list_server_tools(
+        server_id: UUID, db: AsyncSession = Depends(database),
+        _actor: SessionActor = Depends(current_actor),
+    ) -> list[ServerToolResponse]:
+        upstream = await db.get(Upstream, server_id)
+        if upstream is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Server not found")
+        tools = (await db.scalars(
+            select(UpstreamTool).where(UpstreamTool.upstream_id == server_id)
+            .order_by(UpstreamTool.public_alias)
+        )).all()
+        return [ServerToolResponse(
+            public_alias=tool.public_alias, original_name=tool.original_name,
+            description=tool.description, input_schema=tool.input_schema,
+            output_schema=tool.output_schema, annotations=tool.annotations,
+        ) for tool in tools]
 
     @router.patch("/api/servers/{server_id}", response_model=ServerResponse)
     async def update_server(

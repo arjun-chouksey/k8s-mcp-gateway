@@ -13,7 +13,7 @@ from sqlalchemy import delete, select
 from app.bootstrap_admin import bootstrap_admin
 from app.database import make_engine, make_session_factory
 from app.main import create_app
-from app.models import Upstream, User, WebSession
+from app.models import Upstream, UpstreamTool, User, WebSession
 from app.security.upstream_crypto import CredentialCipher
 from app.security.web_sessions import hash_password
 from app.settings import AppSettings
@@ -117,7 +117,25 @@ async def test_admin_crud_encrypts_and_redacts_credentials(database_url: str):
             assert stored is not None and stored.credential_ciphertext is not None
             assert b"first-upstream-secret" not in stored.credential_ciphertext
             assert CredentialCipher(FERNET_KEY).decrypt(stored.credential_ciphertext) == "first-upstream-secret"
+            db.add(UpstreamTool(
+                upstream_id=stored.id, original_name="convert_currency",
+                public_alias="currency__convert_currency", description="Convert an amount",
+                input_schema={"type": "object"}, output_schema=None,
+                annotations={"readOnlyHint": True}, definition_hash="a" * 64,
+            ))
+            await db.commit()
         await engine.dispose()
+
+        tools = await admin.get(f"/api/servers/{server_id}/tools")
+        assert tools.status_code == 200
+        assert tools.json() == [{
+            "public_alias": "currency__convert_currency",
+            "original_name": "convert_currency", "description": "Convert an amount",
+            "input_schema": {"type": "object"}, "output_schema": None,
+            "annotations": {"readOnlyHint": True},
+        }]
+        assert "credential" not in tools.text
+        assert (await admin.get(f"/api/servers/00000000-0000-0000-0000-000000000000/tools")).status_code == 404
 
         replaced = await admin.patch(
             f"/api/servers/{server_id}",
