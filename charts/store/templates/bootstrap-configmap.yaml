@@ -41,6 +41,8 @@ data:
       --version="$WOOCOMMERCE_VERSION" \
       --force --activate $wp_args
     wp option update woocommerce_currency "$STORE_CURRENCY" $wp_args
+    wp option update woocommerce_coming_soon no $wp_args
+    wp option update woocommerce_store_pages_only no $wp_args
     wp option update woocommerce_cod_settings \
       '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash upon delivery.","instructions":"Pay with cash upon delivery.","enable_for_methods":[],"enable_for_virtual":"yes"}' \
       --format=json $wp_args
