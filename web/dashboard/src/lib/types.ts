@@ -89,3 +89,63 @@ export interface KeyRecord {
 export interface IssuedKey extends KeyRecord {
   key: string;
 }
+
+export type AuditOutcome = "ok" | "tool_error" | "upstream_error" | "timeout" | "denied";
+
+export interface AuditEventRecord {
+  id: string;
+  request_id: string;
+  user_id: string | null;
+  api_key_id: string | null;
+  channel: string;
+  server_slug: string;
+  public_tool: string;
+  original_tool: string;
+  started_at: string;
+  duration_ms: number;
+  outcome: AuditOutcome;
+  error_summary: string | null;
+}
+
+export interface AuditPageRecord {
+  items: AuditEventRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AuditFilters {
+  user?: string;
+  server?: string;
+  outcome?: AuditOutcome;
+  started_after?: string;
+  started_before?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationMessage {
+  id: string;
+  role: "user" | "assistant" | "tool" | "system";
+  text: string;
+  tool_calls: ToolTrace[] | null;
+  created_at: string;
+}
+
+export interface ToolTrace {
+  call_id: string;
+  name: string;
+  outcome: string;
+  duration_ms?: number;
+}
+
+export interface ConversationRecord extends ConversationSummary {
+  messages: ConversationMessage[];
+}

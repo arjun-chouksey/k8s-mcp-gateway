@@ -1,4 +1,4 @@
-import type { Actor, InviteRecord, IssuedKey, KeyRecord, MemberRecord, Role, ServerCreate, ServerRecord, ServerTool, ServerUpdate } from "./types";
+import type { Actor, AuditFilters, AuditPageRecord, ConversationRecord, ConversationSummary, InviteRecord, IssuedKey, KeyRecord, MemberRecord, Role, ServerCreate, ServerRecord, ServerTool, ServerUpdate } from "./types";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -51,4 +51,11 @@ export const api = {
   revokeKey: (id: string) => request<void>(`/api/keys/${id}`, { method: "DELETE" }),
   createMemberKey: (memberId: string, name: string) => request<IssuedKey>(`/api/members/${memberId}/keys`, { method: "POST", body: JSON.stringify({ name }) }),
   revokeMemberKey: (memberId: string, keyId: string) => request<void>(`/api/members/${memberId}/keys/${keyId}`, { method: "DELETE" }),
+  audit: (filters: AuditFilters) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== "") params.set(key, String(value)); });
+    return request<AuditPageRecord>(`/api/audit?${params.toString()}`);
+  },
+  conversations: () => request<ConversationSummary[]>("/api/conversations"),
+  conversation: (id: string) => request<ConversationRecord>(`/api/conversations/${id}`),
 };

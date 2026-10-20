@@ -9,13 +9,13 @@ import { cn } from "./lib/utils";
 import type { Actor } from "./lib/types";
 import { Login } from "./pages/Login";
 import { InviteAccept } from "./pages/InviteAccept";
+import { Audit } from "./pages/Audit";
 import { MyKeys } from "./pages/MyKeys";
 import { Servers } from "./pages/Servers";
 import { Team } from "./pages/Team";
+import { Chat } from "./pages/Chat";
 
 const futureNavigation = [
-  { label: "AI Chat", icon: MessageSquare },
-  { label: "Audit Logs", icon: ScrollText },
   { label: "Settings", icon: Settings },
 ];
 
@@ -44,6 +44,8 @@ function Shell({ actor }: { actor: Actor }) {
         <NavLink to="/servers" className={({ isActive }) => cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500", isActive ? "bg-zinc-800 text-zinc-50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200")}><Server className="size-4" /><span className={cn("hidden md:block", collapsed && "md:hidden")}>MCP Servers</span></NavLink>
         {actor.role === "admin" ? <NavLink to="/team" aria-label="Team" className={({ isActive }) => cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500", isActive ? "bg-zinc-800 text-zinc-50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200")}><Users className="size-4" /><span className={cn("hidden md:block", collapsed && "md:hidden")}>Team</span></NavLink> : null}
         <NavLink to="/keys" aria-label="API Keys" className={({ isActive }) => cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500", isActive ? "bg-zinc-800 text-zinc-50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200")}><KeyRound className="size-4" /><span className={cn("hidden md:block", collapsed && "md:hidden")}>API Keys</span></NavLink>
+        <NavLink to="/audit" aria-label="Audit Logs" className={({ isActive }) => cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500", isActive ? "bg-zinc-800 text-zinc-50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200")}><ScrollText className="size-4" /><span className={cn("hidden md:block", collapsed && "md:hidden")}>Audit Logs</span></NavLink>
+        <NavLink to="/chat" aria-label="AI Chat" className={({ isActive }) => cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500", isActive ? "bg-zinc-800 text-zinc-50" : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200")}><MessageSquare className="size-4" /><span className={cn("hidden md:block", collapsed && "md:hidden")}>AI Chat</span></NavLink>
         {futureNavigation.map(({ label, icon: Icon }) => <span key={label} className="hidden items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-600 md:flex" title={`${label} is not part of T-023`}><Icon className="size-4" /><span className={cn(collapsed && "hidden")}>{label}</span></span>)}
       </nav>
       <div className="ml-3 hidden border-t border-zinc-800 pt-4 md:ml-0 md:mt-auto md:block">
@@ -51,7 +53,7 @@ function Shell({ actor }: { actor: Actor }) {
         <Button intent="ghost" size={collapsed ? "icon" : "sm"} className={cn(!collapsed && "w-full justify-start")} onClick={() => void logout()} aria-label="Sign out"><LogOut className="size-4" />{collapsed ? null : "Sign out"}</Button>
       </div>
     </aside>
-    <main className="min-w-0"><Routes><Route path="/servers" element={<Servers actor={actor} notify={notify} onSessionExpired={() => cache.setQueryData(["session"], null)} />} /><Route path="/team" element={actor.role === "admin" ? <Team notify={notify} /> : <Navigate to="/servers" replace />} /><Route path="/keys" element={<MyKeys notify={notify} />} /><Route path="/" element={<Navigate to="/servers" replace />} /><Route path="/login" element={<Navigate to="/servers" replace />} /><Route path="*" element={<section className="grid min-h-[70vh] place-content-center text-center"><p className="text-sm font-medium text-zinc-500">404</p><h1 className="mt-2 text-2xl font-semibold">Page not found</h1><Button asChild className="mt-5"><NavLink to="/servers">Return to servers</NavLink></Button></section>} /></Routes></main>
+    <main className="min-w-0"><Routes><Route path="/servers" element={<Servers actor={actor} notify={notify} onSessionExpired={() => cache.setQueryData(["session"], null)} />} /><Route path="/team" element={actor.role === "admin" ? <Team notify={notify} /> : <Navigate to="/servers" replace />} /><Route path="/keys" element={<MyKeys notify={notify} />} /><Route path="/audit" element={<Audit actor={actor} />} /><Route path="/chat" element={<Chat />} /><Route path="/" element={<Navigate to="/servers" replace />} /><Route path="/login" element={<Navigate to="/servers" replace />} /><Route path="*" element={<section className="grid min-h-[70vh] place-content-center text-center"><p className="text-sm font-medium text-zinc-500">404</p><h1 className="mt-2 text-2xl font-semibold">Page not found</h1><Button asChild className="mt-5"><NavLink to="/servers">Return to servers</NavLink></Button></section>} /></Routes></main>
     <ToastRegion notices={notices} />
   </div>;
 }
