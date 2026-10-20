@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: woo-mcp
+  namespace: {{ .Values.global.namespaces.mcp }}
+  labels:
+    app.kubernetes.io/name: woo-mcp
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: woo-mcp
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: {{ .Values.global.namespaces.platform }}}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: gateway}
+      ports:
+        - {protocol: TCP, port: {{ .Values.service.port }}}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: {{ .Values.global.namespaces.store }}}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: wordpress}
+      ports:
+        - {protocol: TCP, port: {{ .Values.wordpressPort }}}

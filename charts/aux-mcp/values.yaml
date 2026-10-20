@@ -1,5 +1,5 @@
 global:
-  namespaces: {mcp: mcp}
+  namespaces: {mcp: mcp, platform: platform}
 image: {repository: k8s-mcp-gateway/aux-mcp, tag: 0.1.0-local, pullPolicy: IfNotPresent}
 existingSecret: aux-mcp
 currency:

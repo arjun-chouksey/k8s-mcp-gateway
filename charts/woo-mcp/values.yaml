@@ -1,7 +1,8 @@
 global:
-  namespaces: {mcp: mcp}
+  namespaces: {mcp: mcp, platform: platform, store: store}
 image: {repository: k8s-mcp-gateway/woo-mcp, tag: 0.1.0-local, pullPolicy: IfNotPresent}
 service: {name: woocommerce-mcp, port: 8000}
+wordpressPort: 80
 existingSecret: woo-mcp
 storeTimezone: Asia/Kolkata
 probes: {livenessPath: /healthz, readinessPath: /readyz}

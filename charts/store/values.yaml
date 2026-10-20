@@ -1,6 +1,7 @@
 global:
   namespaces:
     store: store
+    mcp: mcp
   hosts:
     shop: shop.127.0.0.1.nip.io
   ingress:

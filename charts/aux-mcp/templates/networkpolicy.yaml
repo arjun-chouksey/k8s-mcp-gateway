@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: auxiliary-mcp
+  namespace: {{ .Values.global.namespaces.mcp }}
+  labels:
+    app.kubernetes.io/part-of: k8s-mcp-gateway
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [currency-mcp, policy-mcp]
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: {{ .Values.global.namespaces.platform }}}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: gateway}
+      ports:
+        - {protocol: TCP, port: {{ .Values.currency.service.port }}}
