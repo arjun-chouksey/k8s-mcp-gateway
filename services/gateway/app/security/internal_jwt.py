@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import jwt
@@ -8,6 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
 from app.security.api_keys import ApiKeyActor
+from app.security.web_sessions import SessionActor
+
+
+def mint_internal_jwt(actor: SessionActor, secret: str, ttl_seconds: int = 300) -> str:
+    now = datetime.now(timezone.utc)
+    return jwt.encode({
+        "sub": str(actor.id), "aud": "gateway-mcp", "iss": "platform-chat",
+        "iat": now, "exp": now + timedelta(seconds=ttl_seconds), "channel": "chat",
+    }, secret, algorithm="HS256")
 
 
 async def authenticate_internal_jwt(

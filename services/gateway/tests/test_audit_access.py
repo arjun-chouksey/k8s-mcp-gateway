@@ -113,6 +113,9 @@ async def test_member_sees_only_own_audit_and_filters_are_validated(database_url
         assert page.status_code == 200
         assert page.json()["total"] == 1
         assert [item["server_slug"] for item in page.json()["items"]] == ["currency"]
+        other_user_id = str((await member.get("/api/me")).json()["id"])
+        assert (await member.get("/api/audit", params={"user": other_user_id})).json()["total"] == 1
+        assert (await member.get("/api/audit", params={"user": str(uuid4())})).json()["total"] == 0
         assert (await member.get("/api/audit", params={"outcome": "invalid"})).status_code == 422
         assert (await member.get("/api/audit", params={
             "started_after": "2026-10-19T00:00:00Z",
@@ -135,4 +138,7 @@ async def test_admin_sees_all_rows_with_pagination(database_url: str):
         assert first.json()["total"] == second.json()["total"] == 2
         assert len(first.json()["items"]) == len(second.json()["items"]) == 1
         assert first.json()["items"][0]["id"] != second.json()["items"][0]["id"]
+        filtered = await admin.get("/api/audit", params={"user": first.json()["items"][0]["user_id"]})
+        assert filtered.status_code == 200
+        assert filtered.json()["total"] == 1
     await app.state.engine.dispose()

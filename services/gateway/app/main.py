@@ -9,6 +9,7 @@ import uvicorn
 
 from app.api.auth import create_auth_router
 from app.api.audit import create_audit_router
+from app.api.chat import create_chat_router
 from app.api.keys import create_keys_router
 from app.api.servers import create_servers_router
 from app.api.team import create_team_router
@@ -19,6 +20,7 @@ from app.mcp_gateway.router import GatewayRouter
 from app.settings import AppSettings
 from app.security.mcp_auth import MCPApiKeyMiddleware
 from app.security.upstream_crypto import CredentialCipher
+from app.chat.agent import ChatAgent
 
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
@@ -56,8 +58,10 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.state.api_key_pepper = config.api_key_pepper.encode()
     app.state.upstream_cipher = cipher
     app.state.catalog = catalog
+    app.state.chat_agent = ChatAgent(sessions, config)
     app.include_router(create_auth_router(config))
     app.include_router(create_audit_router())
+    app.include_router(create_chat_router())
     app.include_router(create_keys_router())
     app.include_router(create_servers_router())
     app.include_router(create_team_router())

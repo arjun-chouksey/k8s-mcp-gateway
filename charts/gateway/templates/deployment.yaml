@@ -1,4 +1,5 @@
 {{- $_ := required "gateway.databaseExistingSecret is required" .Values.databaseExistingSecret -}}
+{{- $_ := required "gateway.llm.existingSecret is required" .Values.llm.existingSecret -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,6 +30,13 @@ spec:
               valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: upstream-credential-key}}
             - name: INTERNAL_JWT_SECRET
               valueFrom: {secretKeyRef: {name: {{ .Values.existingSecret }}, key: internal-jwt-secret}}
+            - name: GROQ_API_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.llm.existingSecret }}, key: {{ .Values.llm.secretKey }}}}
+            - {name: LLM_BASE_URL, value: {{ .Values.llm.baseUrl | quote }} }
+            - {name: LLM_MODEL, value: {{ .Values.llm.model | quote }} }
+            - {name: CHAT_MCP_URL, value: {{ .Values.llm.mcpUrl | quote }} }
+            - {name: CHAT_MAX_ROUNDS, value: {{ .Values.llm.maxRounds | quote }} }
+            - {name: CHAT_TOTAL_TIMEOUT_SECONDS, value: {{ .Values.llm.totalTimeoutSeconds | quote }} }
             - {name: UPSTREAM_INTERNAL_ALLOWLIST, value: {{ join "," .Values.upstream.internalAllowlist | quote }}}
             - {name: UPSTREAM_REFRESH_SECONDS, value: {{ .Values.upstream.refreshSeconds | quote }}}
             - {name: ALLOWED_ORIGIN, value: {{ .Values.auth.allowedOrigin | quote }}}

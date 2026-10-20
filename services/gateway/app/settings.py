@@ -46,6 +46,12 @@ class AppSettings:
     login_max_failures: int = 5
     login_window_seconds: int = 300
     upstream_refresh_seconds: int = 30
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "openai/gpt-oss-20b"
+    llm_api_key: str = ""
+    chat_mcp_url: str = "http://gateway.platform.svc.cluster.local:8000/mcp"
+    chat_max_rounds: int = 6
+    chat_total_timeout_seconds: int = 90
 
     @classmethod
     def from_env(cls) -> AppSettings:
@@ -58,6 +64,8 @@ class AppSettings:
         max_failures = int(os.getenv("LOGIN_MAX_FAILURES", "5"))
         window = int(os.getenv("LOGIN_WINDOW_SECONDS", "300"))
         refresh_seconds = int(os.getenv("UPSTREAM_REFRESH_SECONDS", "30"))
+        chat_max_rounds = int(os.getenv("CHAT_MAX_ROUNDS", "6"))
+        chat_timeout = int(os.getenv("CHAT_TOTAL_TIMEOUT_SECONDS", "90"))
         api_key_pepper = os.getenv("API_KEY_PEPPER", "")
         if len(api_key_pepper) < 32:
             raise RuntimeError("API_KEY_PEPPER must be at least 32 characters")
@@ -75,7 +83,7 @@ class AppSettings:
                 "policy-mcp.mcp.svc.cluster.local:8000",
             ).split(",")
         )))
-        if min(session_ttl, invite_ttl, max_failures, window, refresh_seconds) <= 0:
+        if min(session_ttl, invite_ttl, max_failures, window, refresh_seconds, chat_max_rounds, chat_timeout) <= 0:
             raise RuntimeError("session and login throttling settings must be positive")
         return cls(
             database_url=database_url,
@@ -90,4 +98,10 @@ class AppSettings:
             login_max_failures=max_failures,
             login_window_seconds=window,
             upstream_refresh_seconds=refresh_seconds,
+            llm_base_url=os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"),
+            llm_model=os.getenv("LLM_MODEL", "openai/gpt-oss-20b"),
+            llm_api_key=os.getenv("GROQ_API_KEY", ""),
+            chat_mcp_url=os.getenv("CHAT_MCP_URL", "http://gateway.platform.svc.cluster.local:8000/mcp"),
+            chat_max_rounds=chat_max_rounds,
+            chat_total_timeout_seconds=chat_timeout,
         )

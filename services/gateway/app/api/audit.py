@@ -44,6 +44,7 @@ def create_audit_router() -> APIRouter:
 
     @router.get("/api/audit", response_model=AuditPage)
     async def list_audit(
+        user: UUID | None = None,
         server: str | None = Query(default=None, max_length=80),
         outcome: AuditOutcome | None = None,
         started_after: datetime | None = None,
@@ -61,6 +62,8 @@ def create_audit_router() -> APIRouter:
         filters = []
         if actor.role != "admin":
             filters.append(AuditEvent.user_id == actor.id)
+        if user:
+            filters.append(AuditEvent.user_id == user)
         if server:
             filters.append(AuditEvent.server_slug == server)
         if outcome:

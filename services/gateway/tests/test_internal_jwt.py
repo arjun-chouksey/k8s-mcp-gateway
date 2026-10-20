@@ -7,7 +7,8 @@ import pytest
 
 from app.database import make_engine, make_session_factory
 from app.models import User
-from app.security.internal_jwt import authenticate_internal_jwt
+from app.security.internal_jwt import authenticate_internal_jwt, mint_internal_jwt
+from app.security.web_sessions import SessionActor
 from app.security.web_sessions import hash_password
 from _catalog_support import catalog_database_url, clean_catalog
 
@@ -46,4 +47,9 @@ async def test_internal_jwt_requires_issuer_audience_expiry_channel_and_active_u
         user.active = False
         await db.commit()
         assert await authenticate_internal_jwt(db, token, SECRET) is None
+        minted = mint_internal_jwt(SessionActor(user.id, user.email, "member"), SECRET)
+        user.active = True
+        await db.commit()
+        minted_actor = await authenticate_internal_jwt(db, minted, SECRET)
+        assert minted_actor is not None and minted_actor.id == user.id and minted_actor.channel == "chat"
     await engine.dispose()

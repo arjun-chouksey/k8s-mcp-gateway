@@ -109,6 +109,14 @@ gateway:
   existingSecret: gateway
   databaseExistingSecret: platform-postgres
   bootstrapExistingSecret: gateway-bootstrap-admin
+  llm:
+    existingSecret: gateway
+    secretKey: groq-api-key
+    baseUrl: https://api.groq.com/openai/v1
+    model: openai/gpt-oss-20b
+    mcpUrl: http://gateway.platform.svc.cluster.local:8000/mcp
+    maxRounds: 6
+    totalTimeoutSeconds: 90
   probes:
     livenessPath: /healthz
     readinessPath: /readyz
