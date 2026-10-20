@@ -73,7 +73,7 @@ woo-mcp:
   storeTimezone: Asia/Kolkata
   probes:
     livenessPath: /healthz
-    readinessPath: /readyz
+    readinessPath: /healthz
   resources:
     requests: {cpu: 50m, memory: 128Mi}
     limits: {cpu: 500m, memory: 512Mi}
