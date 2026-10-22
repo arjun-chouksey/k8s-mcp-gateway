@@ -12,6 +12,9 @@ global:
 
 store:
   wordpress:
+    existingSecret: store-wordpress
+    bootstrap:
+      adminExistingSecret: store-wordpress-admin
     persistence:
       size: 10Gi
     resources:
@@ -22,6 +25,7 @@ store:
         cpu: "1"
         memory: 1Gi
   mariadb:
+    existingSecret: store-mariadb
     persistence:
       size: 10Gi
     resources:
@@ -36,21 +40,31 @@ woo-mcp:
   image:
     repository: ghcr.io/arjun-chouksey/k8s-mcp-gateway/woo-mcp
     tag: 0.1.0
+  existingSecret: woo-mcp
 
 aux-mcp:
   image:
     repository: ghcr.io/arjun-chouksey/k8s-mcp-gateway/aux-mcp
     tag: 0.1.0
+  existingSecret: aux-mcp
 
 gateway:
   image:
     repository: ghcr.io/arjun-chouksey/k8s-mcp-gateway/gateway
     tag: 0.1.0
+  existingSecret: gateway
+  databaseExistingSecret: platform-postgres
+  bootstrapExistingSecret: gateway-bootstrap-admin
+  llm:
+    existingSecret: gateway
+  upstreamBootstrap:
+    existingSecret: gateway-upstreams
   auth:
     allowedOrigin: https://app.example.com
     cookieSecure: true
 
 platform-db:
+  existingSecret: platform-postgres
   persistence:
     size: 10Gi
 
