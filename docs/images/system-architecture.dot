@@ -1,0 +1,67 @@
+digraph platform {
+  graph [
+    bgcolor="#0b0f14", pad="0.35", nodesep="0.45", ranksep="0.65",
+    fontname="Arial", fontcolor="#d7e0ea", label="k8s-mcp-gateway — request and trust boundaries",
+    labelloc="t", fontsize="22", compound="true", splines="ortho"
+  ];
+  node [
+    shape="box", style="rounded,filled", color="#52606d", fillcolor="#151c24",
+    fontname="Arial", fontcolor="#f3f6f9", fontsize="11", margin="0.14,0.10"
+  ];
+  edge [color="#8091a5", fontname="Arial", fontcolor="#b6c2cf", fontsize="9", arrowsize="0.75"];
+
+  shopper [label="Shopper\nstorefront + COD checkout", fillcolor="#18231f", color="#3e8061"];
+  operator [label="Team member\ndashboard + AI chat", fillcolor="#18231f", color="#3e8061"];
+  client [label="External MCP client\nCodex CLI / MCP Inspector", fillcolor="#18231f", color="#3e8061"];
+  groq [label="GroqCloud\nOpenAI-compatible Responses API", fillcolor="#2a2116", color="#a77b37"];
+
+  subgraph cluster_k8s {
+    label="Kubernetes — k3d locally / k3s target";
+    color="#334252"; style="rounded"; penwidth="1.3";
+
+    ingress [label="Traefik Ingress\nonly public cluster entry", fillcolor="#242033", color="#7667a8"];
+
+    subgraph cluster_store {
+      label="store namespace"; color="#315b49"; style="rounded,dashed";
+      wordpress [label="WordPress + WooCommerce\npublic shop and admin\nPersistent uploads"];
+      mariadb [label="MariaDB\nproducts, customers, orders\nPVC", shape="cylinder"];
+      wordpress -> mariadb [label="SQL"];
+    }
+
+    subgraph cluster_platform {
+      label="platform namespace"; color="#4a5370"; style="rounded,dashed";
+      dashboard [label="React dashboard\nservers · team · keys\naudit · chat"];
+      gateway [label="Team MCP Gateway (FastAPI)\nREST API + /mcp\nauth · discovery · routing\npermissions · audit"];
+      postgres [label="PostgreSQL\nusers · hashed keys · sessions\nencrypted upstream credentials\ntool catalog · audit · chat\nPVC", shape="cylinder"];
+      dashboard -> gateway [label="session cookie / REST"];
+      gateway -> postgres [label="SQLAlchemy"];
+    }
+
+    subgraph cluster_mcp {
+      label="mcp namespace — private ClusterIP only"; color="#714b45"; style="rounded,dashed";
+      woo [label="WooCommerce MCP\n5 tools\nBearer auth"];
+      currency [label="Currency MCP\n2 fixed-demo-rate tools\nBearer auth"];
+      policy [label="Policy MCP\n3 policy/collision tools\nBearer auth"];
+    }
+
+    ingress -> wordpress [label="shop host"];
+    ingress -> dashboard [label="app host"];
+    ingress -> gateway [label="/api + /mcp"];
+    gateway -> woo [label="woo__*\nserver credential"];
+    gateway -> currency [label="currency__*\nserver credential"];
+    gateway -> policy [label="policy__*\nserver credential"];
+    woo -> wordpress [label="Woo REST v3\nOAuth 1.0a"];
+  }
+
+  shopper -> ingress [label="HTTP(S)"];
+  operator -> ingress [label="HTTP(S)"];
+  client -> ingress [label="Streamable HTTP /mcp\npersonal bearer API key"];
+  gateway -> groq [label="chat prompt + bounded tool results\nHTTPS"];
+  groq -> gateway [label="tool calls"];
+
+  legend [
+    shape="note", fillcolor="#111820", color="#52606d",
+    label="Security boundary\n• Client keys terminate at gateway\n• Upstream credentials are never returned or forwarded from clients\n• NetworkPolicy permits gateway → MCP and blocks other Pods\n• Every tool call is re-authorized and audited"
+  ];
+  legend -> gateway [style="dotted", arrowhead="none"];
+}
