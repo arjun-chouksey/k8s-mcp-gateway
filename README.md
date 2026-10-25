@@ -6,7 +6,21 @@ independent currency and policy servers. The React dashboard provides team,
 key, server, audit, and AI-chat workflows; both chat and external MCP clients
 use the same gateway policy and audit path.
 
-## Kubernetes architecture
+## 1. Kubernetes learning model
+
+This diagram is the general Kubernetes mental model used while building the
+project. `kubectl` talks to the control plane; the scheduler and controllers
+place and maintain Pods on worker nodes; the kubelet and container runtime run
+those Pods. In local development, k3d packages this Kubernetes environment into
+Docker containers. On a VPS, k3s provides the same Kubernetes APIs in a
+lightweight single-node installation.
+
+![Kubernetes control plane and worker-node learning diagram](docs/images/kubernetes-architecture.png)
+
+This is a learning diagram, not the request flow of the application. The next
+diagram shows the components actually implemented by this repository.
+
+## 2. Project architecture
 
 The installation uses `store`, `mcp`, and `platform` namespaces. WordPress,
 MariaDB, PostgreSQL, the dashboard, gateway, and all three MCP servers run in
@@ -74,7 +88,36 @@ The chat agent is a logical module inside the Gateway Deployment, not a separate
 Kubernetes workload. Client API keys terminate at the gateway and are never
 forwarded upstream; each MCP server receives its own stored credential.
 
-## Prerequisites
+## 3. What the platform provides
+
+- A real WordPress and WooCommerce storefront with Cash on Delivery checkout,
+  durable MariaDB storage, and persistent WordPress content.
+- One authenticated Streamable HTTP MCP endpoint for dashboard chat and external
+  clients.
+- Three independent private MCP servers with ten tools in total.
+- Admin server management, team invitations, personal API keys, immediate key
+  revocation, upstream status, and attributed audit logs.
+- Dynamic tool discovery and collision-safe names such as
+  `woo__list_products` and `policy__list_products`.
+- Failure isolation: one unavailable upstream does not prevent the remaining
+  servers from listing or executing their tools.
+- One Helm umbrella chart rendered with local k3d or VPS k3s values.
+
+### MCP tool catalog
+
+| Server | Gateway tools | Data source |
+| --- | --- | --- |
+| WooCommerce | `woo__list_products`, `woo__create_product`, `woo__list_orders`, `woo__get_order`, `woo__update_order_status` | Real WooCommerce REST API |
+| Currency | `currency__convert_currency`, `currency__get_demo_rates` | Fixed, versioned demonstration rates—not live FX |
+| Policy | `policy__list_store_policies`, `policy__get_store_policy`, `policy__list_products` | Versioned demonstration policies and collision fixture |
+
+WooCommerce write operations are never silently retried after a timeout because
+creating a duplicate product is worse than returning an explicit uncertain
+result.
+
+## 4. Run locally
+
+### Prerequisites
 
 - Docker, k3d, kubectl, and Helm 3 for local development.
 - A Linux VPS with a public IPv4 address, at least 2 vCPU, 4 GiB RAM, and 30 GiB
@@ -88,7 +131,7 @@ All image tags in the VPS values are immutable release labels rather than
 GHCR paths or replace only their repositories and tags in
 `charts/platform/values-vps.yaml`.
 
-## Local deployment
+### Deploy the platform
 
 Create the pinned k3d cluster and namespaces:
 
@@ -132,7 +175,66 @@ helm upgrade --install urumi charts/platform \
 Open `http://shop.127.0.0.1.nip.io:8080` and
 `http://app.127.0.0.1.nip.io:8080`.
 
-## Existing Secrets
+| Surface | Local address |
+| --- | --- |
+| Storefront | <http://shop.127.0.0.1.nip.io:8080> |
+| WordPress admin | <http://shop.127.0.0.1.nip.io:8080/wp-admin> |
+| Team dashboard | <http://app.127.0.0.1.nip.io:8080> |
+| Unified MCP endpoint | `http://app.127.0.0.1.nip.io:8080/mcp` |
+
+## 5. Use the application
+
+### Store customer
+
+Open the storefront, add a product, proceed to checkout, and choose **Cash on
+Delivery**. The order is persisted by WooCommerce and appears in WordPress admin
+under **WooCommerce → Orders**. The same order can be retrieved through the Woo
+MCP tools.
+
+### Dashboard administrator
+
+An administrator can:
+
+- register, edit, enable, disable, and inspect MCP servers;
+- invite members and change their active status or role;
+- issue or revoke member API keys;
+- view all attributed tool-call audit events; and
+- use AI Chat to create products, inspect orders, and combine multiple upstreams.
+
+Chat calls the gateway's own `/mcp` endpoint with a short-lived token for the
+logged-in user. It cannot bypass the gateway router, authorization, or audit
+path.
+
+### Team member and external MCP client
+
+An invited member accepts the single-use invitation, chooses a password, and
+creates a personal API key under **API Keys**. Configure an MCP client with only:
+
+```text
+Transport: Streamable HTTP
+URL: http://app.127.0.0.1.nip.io:8080/mcp
+Header: Authorization: Bearer <personal-gateway-key>
+```
+
+For MCP Inspector, start the client and enter the values above:
+
+```bash
+npx -y @modelcontextprotocol/inspector
+```
+
+The personal key is displayed once. Revoking it rejects the next MCP request.
+Users never configure or receive the WooCommerce, Currency, or Policy upstream
+credentials.
+
+### Example AI chat prompts
+
+```text
+Create a published virtual product named Urumi Mug priced at 499 INR.
+What orders came in today?
+List today's order totals and convert the sum from INR to EUR using demo rates.
+```
+
+## 6. Secrets and security boundaries
 
 The Helm chart renders references to pre-created Secrets and never renders
 secret values. Create these resources before installation:
@@ -182,7 +284,57 @@ store bootstrap, then issue a read/write REST key through **WooCommerce admin �
 Settings → Advanced → REST API**. Replace the two REST key fields and restart
 `deployment/woo-mcp`. Never write directly to WooCommerce authentication tables.
 
-## Single-node k3s VPS deployment
+### Security controls
+
+- Personal gateway keys are random, shown once, stored as hashes, and checked on
+  every MCP request.
+- Browser passwords are Argon2-hashed; mutating browser requests enforce the
+  configured origin.
+- Upstream credentials are encrypted in PostgreSQL, remain write-only through
+  the API, and replace—not forward—the client's Authorization header.
+- Public and internal server URLs are validated to limit SSRF to metadata,
+  loopback, and unintended cluster destinations.
+- MCP servers have no Ingress. NetworkPolicy allows the gateway to call them and
+  blocks unauthorized Pods.
+- Order tools omit billing and shipping PII from model-facing responses.
+- Every tool attempt records the actor, server, tool, channel, time, duration,
+  outcome, and bounded error summary.
+
+See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the detailed threats,
+controls, negative tests, and residual risks.
+
+## 7. Verification status
+
+The mandatory local flow has been exercised with two users:
+
+1. User A created a real WooCommerce product through dashboard chat.
+2. A customer placed a Cash on Delivery order, and chat retrieved the same order.
+3. User B connected through one gateway URL and personal key, discovered all
+   three upstreams, and called both WooCommerce and Currency tools.
+4. Member access to admin operations was denied.
+5. Disabling a server removed its tools and denied a cached alias.
+6. Scaling Currency to zero made it unreachable while WooCommerce continued
+   working.
+7. Revoking User B's key returned `401` on the next request.
+8. Audit rows contained the correct user, server, tool, duration, and outcome.
+
+Current automated checks include 52 gateway tests, 25 WooCommerce/auxiliary MCP
+tests, 10 dashboard tests, a dashboard production build, Helm lint/template
+parity, live MCP Inspector checks for all three servers, storefront smoke tests,
+and a NetworkPolicy denial test.
+
+Useful operator checks:
+
+```bash
+kubectl get pods,svc,ingress,pvc,networkpolicy -A
+helm lint charts/platform -f charts/platform/values-local.yaml
+helm template urumi charts/platform -n platform \
+  -f charts/platform/values-local.yaml >/tmp/urumi-local.yaml
+helm template urumi charts/platform -n platform \
+  -f charts/platform/values-vps.yaml >/tmp/urumi-vps.yaml
+```
+
+## 8. Single-node k3s VPS deployment
 
 1. Point `shop.example.com` and `app.example.com` A/AAAA records at the VPS,
    replace those placeholders in `charts/platform/values-vps.yaml`, and wait
@@ -242,7 +394,7 @@ Settings → Advanced → REST API**. Replace the two REST key fields and restar
 No VPS, DNS record, certificate, or registry package is provisioned by this
 repository. A documented render is not evidence of a live VPS deployment.
 
-## Upgrades, rollback, and backups
+## 9. Upgrades, rollback, and backups
 
 Before every upgrade, back up MariaDB, PostgreSQL, and the WordPress uploads
 stored on the `wordpress-content` PVC. Copy backups off the VPS and test a
@@ -264,3 +416,23 @@ This topology is intentionally single-node and is **not highly available**. A
 node, disk, or provider failure can take down every workload. Off-server backups,
 monitoring, OS security updates, firewall rules for 22/80/443, and tested restore
 procedures are operational requirements for a real deployment.
+
+## 10. Repository map
+
+```text
+charts/                 Umbrella and component Helm charts
+infra/                  Namespace manifests and public infrastructure notes
+services/gateway/       FastAPI REST API, MCP gateway, auth, chat, audit, migrations
+services/woo-mcp/       Custom five-tool WooCommerce MCP server
+services/aux-mcp/       Independent Currency and Policy MCP servers
+web/dashboard/          React dashboard and AI chat interface
+docs/THREAT_MODEL.md    Public security analysis and residual risks
+docs/images/            Kubernetes learning diagram
+```
+
+### Current boundary
+
+The complete mandatory application works locally on k3d. The same Helm templates
+render with the k3s values, but this repository does not yet claim a live public
+VPS, issued TLS certificates, or a tested off-node backup restore. Those claims
+remain pending until they are exercised on real infrastructure.
