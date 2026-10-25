@@ -15,68 +15,59 @@ MCP services remain private ClusterIP services protected by NetworkPolicy.
 
 ```mermaid
 flowchart TB
-    USER["Dashboard user"]
-    CLIENT["External MCP client"]
-    SHOPPER["Store customer"]
-    LLM["GroqCloud LLM API"]
+   USER["Dashboard User"]
+   CLIENT["External MCP Client"]
+   SHOPPER["Store Customer"]
+   LLM["Groq LLM API"]
 
-    subgraph K8S["Kubernetes — k3d local / k3s target"]
-        ING["Traefik Ingress"]
+   subgraph K8S["Kubernetes — k3d local / k3s target"]
+       ING["Traefik Ingress"]
 
-        subgraph PLATFORM["platform namespace"]
-            UI["React dashboard served by Nginx"]
+       subgraph PLATFORM["platform namespace"]
+           UI["React + Nginx Dashboard"]
+           GW["FastAPI Gateway — REST API + /mcp"]
+           AGENT["AI Chat Agent"]
+           PG[("PostgreSQL")]
+       end
 
-            subgraph GATEWAY["Gateway Deployment"]
-                GW["FastAPI REST API + authenticated /mcp"]
-                AGENT["AI chat agent"]
-            end
+       subgraph MCP["mcp namespace — private services"]
+           WOO["WooCommerce MCP — 5 tools"]
+           CUR["Currency MCP — 2 tools"]
+           POL["Policy MCP — 3 tools"]
+       end
 
-            PG[("PostgreSQL + PVC")]
-        end
+       subgraph STORE["store namespace"]
+           WP["WordPress + WooCommerce"]
+           DB[("MariaDB")]
+       end
+   end
 
-        subgraph MCP["mcp namespace — private ClusterIP services"]
-            WOO["WooCommerce MCP — 5 tools"]
-            CUR["Currency MCP — 2 tools"]
-            POL["Policy MCP — 3 tools"]
-        end
+   USER --> ING
+   CLIENT -->|"Personal API key"| ING
+   SHOPPER --> ING
 
-        subgraph STORE["store namespace"]
-            WP["WordPress + WooCommerce + uploads PVC"]
-            DB[("MariaDB + PVC")]
-        end
-    end
+   ING -->|"/"| UI
+   ING -->|"/api and /mcp"| GW
+   ING -->|"Shop domain"| WP
 
-    USER -->|"Browser session"| ING
-    CLIENT -->|"Personal API key · Streamable HTTP"| ING
-    SHOPPER -->|"Storefront and checkout"| ING
+   GW --> AGENT
+   AGENT -->|"Internal JWT via /mcp"| GW
+   AGENT -->|"LLM request and response"| LLM
+   GW -->|"Registry, users, audit"| PG
 
-    ING -->|"app host · /"| UI
-    ING -->|"app host · /api and /mcp"| GW
-    ING -->|"shop host · /"| WP
-    UI -->|"Session-authenticated /api"| GW
+   GW -->|"Upstream token"| WOO
+   GW --> CUR
+   GW --> POL
+   WOO -->|"Woo REST API"| WP
+   WP --> DB
 
-    GW -->|"Chat request"| AGENT
-    AGENT <-->|"Prompts, tool definitions and tool calls"| LLM
-    AGENT -->|"Short-lived user JWT via internal /mcp"| GW
-    GW -->|"Users, registry, tools, audit and chat"| PG
+   classDef application fill:#252b40,stroke:#6366f1,color:#ffffff
+   classDef upstream fill:#123e43,stroke:#14b8a6,color:#ffffff
+   classDef storage fill:#423318,stroke:#f59e0b,color:#ffffff
 
-    GW -->|"Woo upstream credential"| WOO
-    GW -->|"Currency upstream credential"| CUR
-    GW -->|"Policy upstream credential"| POL
-    WOO -->|"WooCommerce REST API · OAuth 1.0a"| WP
-    WP -->|"Products, customers and orders"| DB
-
-    classDef client fill:#073b66,stroke:#155080,color:#a7d5ff
-    classDef ingress fill:#073b66,stroke:#155080,color:#a7d5ff
-    classDef application fill:#202126,stroke:#6366f1,color:#ffffff
-    classDef upstream fill:#152525,stroke:#14b8a6,color:#ffffff
-    classDef storage fill:#2b2417,stroke:#f59e0b,color:#ffffff
-
-    class USER,CLIENT,SHOPPER,LLM client
-    class ING ingress
-    class UI,GW,AGENT application
-    class WOO,CUR,POL,WP upstream
-    class PG,DB storage
+   class UI,GW,AGENT application
+   class WOO,CUR,POL,WP upstream
+   class PG,DB storage
 ```
 
 The chat agent is a logical module inside the Gateway Deployment, not a separate
