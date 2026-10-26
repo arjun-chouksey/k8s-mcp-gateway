@@ -27,7 +27,12 @@ def create_auth_router(
     throttle: LoginThrottle | None = None,
 ) -> APIRouter:
     router = APIRouter()
-    limiter = throttle or LoginThrottle(settings.login_max_failures, settings.login_window_seconds)
+    email_limiter = throttle or LoginThrottle(
+        settings.login_max_failures, settings.login_window_seconds
+    )
+    ip_limiter = LoginThrottle(
+        settings.login_max_failures * 5, settings.login_window_seconds
+    )
 
     @router.post("/api/auth/login", response_model=ActorResponse)
     async def login(
@@ -35,14 +40,16 @@ def create_auth_router(
         db: AsyncSession = Depends(database),
     ):
         client = request.client.host if request.client else "unknown"
-        throttle_key = f"{client}:{payload.email.lower()}"
-        if limiter.blocked(throttle_key):
+        email_key = f"email:{payload.email.lower()}"
+        ip_key = f"ip:{client}"
+        if email_limiter.blocked(email_key) or ip_limiter.blocked(ip_key):
             raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many login attempts")
         created = await create_session(db, payload.email, payload.password, settings.session_ttl_seconds)
         if created is None:
-            limiter.failure(throttle_key)
+            email_limiter.failure(email_key)
+            ip_limiter.failure(ip_key)
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
-        limiter.success(throttle_key)
+        email_limiter.success(email_key)
         response.set_cookie(
             SESSION_COOKIE, created.token, max_age=settings.session_ttl_seconds,
             httponly=True, secure=settings.cookie_secure, samesite="lax", path="/",

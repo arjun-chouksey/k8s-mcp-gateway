@@ -45,6 +45,7 @@ spec:
             - {name: INVITE_TTL_SECONDS, value: {{ .Values.auth.inviteTtlSeconds | quote }}}
             - {name: LOGIN_MAX_FAILURES, value: {{ .Values.auth.loginMaxFailures | quote }}}
             - {name: LOGIN_WINDOW_SECONDS, value: {{ .Values.auth.loginWindowSeconds | quote }}}
+            - {name: FORWARDED_ALLOW_IPS, value: {{ .Values.auth.forwardedAllowIps | quote }}}
           startupProbe:
             httpGet: {path: {{ .Values.probes.readinessPath }}, port: http}
             periodSeconds: 5

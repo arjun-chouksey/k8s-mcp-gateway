@@ -37,6 +37,7 @@ auth:
   inviteTtlSeconds: 86400
   loginMaxFailures: 5
   loginWindowSeconds: 300
+  forwardedAllowIps: "10.42.0.0/16"
 bootstrap:
   enabled: true
   ttlSecondsAfterFinished: 3600

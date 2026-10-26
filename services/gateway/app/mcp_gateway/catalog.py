@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
+import logging
 from typing import Callable
 from uuid import UUID
 
@@ -16,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.mcp_gateway.adapter import UpstreamAdapter, UpstreamConfig, UpstreamError
 from app.mcp_gateway.aliases import public_alias
+from app.mcp_gateway.permissions import PermissionPolicy
 from app.models import Upstream, UpstreamTool
 from app.security.upstream_crypto import CredentialCipher
 
@@ -33,6 +35,7 @@ class CachedTool:
 
 
 AdapterFactory = Callable[[UpstreamConfig, str | None], UpstreamAdapter]
+logger = logging.getLogger(__name__)
 
 
 class CatalogService:
@@ -52,6 +55,7 @@ class CatalogService:
         self._refresh_seconds = refresh_seconds
         self._refresh_limit = asyncio.Semaphore(max_parallel_refreshes)
         self._adapter_factory = adapter_factory
+        self._permissions = PermissionPolicy()
         self._queue: asyncio.Queue[UUID] = asyncio.Queue()
         self._task: asyncio.Task | None = None
 
@@ -74,13 +78,17 @@ class CatalogService:
     async def _run(self) -> None:
         while True:
             try:
-                upstream_id = await asyncio.wait_for(
-                    self._queue.get(), timeout=self._refresh_seconds
-                )
-            except TimeoutError:
-                await self.refresh_all()
-            else:
-                await self.refresh_upstream(upstream_id)
+                try:
+                    upstream_id = await asyncio.wait_for(
+                        self._queue.get(), timeout=self._refresh_seconds
+                    )
+                except TimeoutError:
+                    await self.refresh_all()
+                else:
+                    await self.refresh_upstream(upstream_id)
+            except Exception:
+                logger.exception("Catalog refresh iteration failed; refresher will continue")
+                await asyncio.sleep(min(1, self._refresh_seconds))
 
     async def refresh_all(self) -> None:
         async with self._sessions() as db:
@@ -191,16 +199,27 @@ class CatalogService:
         return "Upstream tool catalog is invalid"
 
     async def list_tools(self, db: AsyncSession, actor: object | None = None) -> list[CachedTool]:
-        del actor  # Role/tool permission filtering is added at the downstream policy ticket.
         rows = (await db.execute(
             select(UpstreamTool, Upstream.slug)
             .join(Upstream, Upstream.id == UpstreamTool.upstream_id)
             .where(Upstream.enabled.is_(True))
             .order_by(UpstreamTool.public_alias)
         )).all()
+        role = getattr(actor, "role", None)
+        overrides = await self._permissions.overrides(db, role) if role else {}
+        permitted = []
+        for tool, slug in rows:
+            if role:
+                allowed = overrides.get(
+                    (tool.upstream_id, tool.original_name),
+                    self._permissions.default_allowed(role, tool.original_name, tool.annotations),
+                )
+                if not allowed:
+                    continue
+            permitted.append((tool, slug))
         return [CachedTool(
             public_alias=tool.public_alias, original_name=tool.original_name,
             upstream_id=tool.upstream_id, upstream_slug=slug,
             description=tool.description, input_schema=tool.input_schema,
             output_schema=tool.output_schema, annotations=tool.annotations,
-        ) for tool, slug in rows]
+        ) for tool, slug in permitted]

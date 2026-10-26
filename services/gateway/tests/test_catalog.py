@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+
 from mcp.types import Tool, ToolAnnotations
 import pytest
 from sqlalchemy import select
@@ -93,4 +95,27 @@ async def test_invalid_schema_does_not_replace_last_known_catalog(catalog_databa
     assert current.status == "unreachable"
     assert current.last_error == "Upstream tool catalog is invalid"
     assert [entry.public_alias for entry in cached] == ["woo__list_products"]
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_background_refresher_survives_unexpected_error(catalog_database_url: str):
+    engine = make_engine(catalog_database_url)
+    sessions = make_session_factory(engine)
+    catalog = CatalogService(sessions, CredentialCipher(KEY), refresh_seconds=0.01)
+    recovered = asyncio.Event()
+    calls = 0
+
+    async def flaky_refresh():
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("database temporarily unavailable")
+        recovered.set()
+
+    catalog.refresh_all = flaky_refresh
+    catalog.start()
+    await asyncio.wait_for(recovered.wait(), timeout=2)
+    await catalog.stop()
+    assert calls >= 2
     await engine.dispose()

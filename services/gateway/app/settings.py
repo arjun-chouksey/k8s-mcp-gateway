@@ -46,6 +46,7 @@ class AppSettings:
     invite_ttl_seconds: int = 86_400
     login_max_failures: int = 5
     login_window_seconds: int = 300
+    forwarded_allow_ips: str = "127.0.0.1"
     upstream_refresh_seconds: int = 30
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_model: str = "openai/gpt-oss-20b"
@@ -99,6 +100,7 @@ class AppSettings:
             invite_ttl_seconds=invite_ttl,
             login_max_failures=max_failures,
             login_window_seconds=window,
+            forwarded_allow_ips=os.getenv("FORWARDED_ALLOW_IPS", "127.0.0.1"),
             upstream_refresh_seconds=refresh_seconds,
             llm_base_url=os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"),
             llm_model=os.getenv("LLM_MODEL", "openai/gpt-oss-20b"),

@@ -72,6 +72,7 @@ async def test_bootstrap_once_login_me_origin_guard_and_logout(database_url: str
         assert "password" not in login.text and "session" not in login.json()
         cookie = login.headers["set-cookie"]
         assert "HttpOnly" in cookie and "SameSite=lax" in cookie
+        assert (await client.get("/readyz")).status_code == 200
 
         me = await client.get("/api/me")
         assert me.status_code == 200 and me.json()["email"] == ADMIN_EMAIL
@@ -123,3 +124,29 @@ async def test_invalid_credentials_throttle_inactive_users_and_secure_cookie(dat
         response = await client.post("/api/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
         assert response.status_code == 200 and "Secure" in response.headers["set-cookie"]
     await secure_app.state.engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_login_throttle_also_bounds_password_spraying_per_ip(database_url: str):
+    await bootstrap_admin(ADMIN_EMAIL, ADMIN_PASSWORD, database_url)
+    app = create_app(settings(database_url))
+    same_ip = httpx.ASGITransport(app=app, client=("203.0.113.10", 1234))
+    async with httpx.AsyncClient(transport=same_ip, base_url="http://app.test") as client:
+        for index in range(10):
+            denied = await client.post(
+                "/api/auth/login",
+                json={"email": f"spray-{index}@example.test", "password": "wrong password"},
+            )
+            assert denied.status_code == 401
+        blocked = await client.post(
+            "/api/auth/login",
+            json={"email": "another@example.test", "password": "wrong password"},
+        )
+        assert blocked.status_code == 429
+    other_ip = httpx.ASGITransport(app=app, client=("203.0.113.11", 1234))
+    async with httpx.AsyncClient(transport=other_ip, base_url="http://app.test") as client:
+        assert (await client.post(
+            "/api/auth/login",
+            json={"email": "another@example.test", "password": "wrong password"},
+        )).status_code == 401
+    await app.state.engine.dispose()

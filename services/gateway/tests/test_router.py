@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.database import make_engine, make_session_factory
 from app.mcp_gateway.catalog import CatalogService
 from app.mcp_gateway.router import GatewayRouter
-from app.models import Upstream, UpstreamTool, User
+from app.models import AuditEvent, Upstream, UpstreamTool, User
 from app.security.api_keys import ApiKeyActor
 from app.security.upstream_crypto import CredentialCipher
 from app.security.web_sessions import hash_password
@@ -90,4 +90,47 @@ async def test_bad_schema_unknown_alias_and_disabled_stale_call_are_rejected(cat
     with pytest.raises(MCPError, match="disabled"):
         await router.call_tool(actor, "currency__convert_currency", {"amount": 10})
     assert FakeAdapter.calls == []
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_member_write_is_hidden_and_denied_but_admin_can_call(catalog_database_url: str):
+    from mcp.shared.exceptions import MCPError
+
+    FakeAdapter.calls.clear()
+    engine, sessions, router, member, upstream_id = await setup_router(catalog_database_url)
+    async with sessions() as db:
+        upstream = await db.get(Upstream, upstream_id)
+        upstream.slug = "woo"
+        tool = await db.scalar(select(UpstreamTool).where(UpstreamTool.upstream_id == upstream_id))
+        tool.original_name = "create_product"
+        tool.public_alias = "woo__create_product"
+        tool.annotations = {"readOnlyHint": False}
+        await db.commit()
+    assert await router.list_tools(member) == []
+    with pytest.raises(MCPError, match="not permitted"):
+        await router.call_tool(member, "woo__create_product", {"amount": 10})
+    async with sessions() as db:
+        denied = await db.scalar(select(AuditEvent).order_by(AuditEvent.started_at.desc()))
+        user = await db.get(User, member.id)
+        user.role = "admin"
+        await db.commit()
+    assert denied is not None and denied.outcome == "denied"
+    admin = ApiKeyActor(member.id, member.email, "admin", None, "mcp")
+    assert [tool.name for tool in await router.list_tools(admin)] == ["woo__create_product"]
+    result = await router.call_tool(admin, "woo__create_product", {"amount": 10})
+    assert result.is_error is False
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_unreachable_call_requests_immediate_refresh(catalog_database_url: str):
+    engine, sessions, router, actor, upstream_id = await setup_router(catalog_database_url)
+    async with sessions() as db:
+        upstream = await db.get(Upstream, upstream_id)
+        upstream.status = "unreachable"
+        await db.commit()
+    result = await router.call_tool(actor, "currency__convert_currency", {"amount": 10})
+    assert result.is_error is True
+    assert router._catalog._queue.get_nowait() == upstream_id
     await engine.dispose()

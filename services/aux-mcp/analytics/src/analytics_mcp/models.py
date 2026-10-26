@@ -37,6 +37,9 @@ class OrderInput(StrictModel):
     currency: str = Field(pattern=r"^[A-Za-z]{3}$")
     total: Decimal
     date_created: datetime
+    # Present in the bounded Woo summary. Accepted for direct composition but
+    # excluded from the analytics model's retained/output representation.
+    payment_method: str | None = Field(default=None, max_length=100, exclude=True)
     line_items: list[LineItemInput] = Field(default_factory=list, max_length=100)
 
     @field_validator("status")

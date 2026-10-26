@@ -121,6 +121,18 @@ def test_invalid_money_dates_pii_and_quantities_are_rejected(payload):
         OrderInput.model_validate(payload)
 
 
+def test_woo_summary_extra_fields_are_discarded():
+    order = OrderInput.model_validate({
+        "id": 1, "status": "processing", "currency": "INR", "total": "499.00",
+        "date_created": "2026-10-01T10:00:00Z", "payment_method": "cod",
+        "line_items": [{
+            "product_id": 9, "name": "Demo", "quantity": 1, "total": "499.00",
+        }],
+    })
+    assert "payment_method" not in order.model_dump()
+    assert summarize_sales([order])["gross_order_value"] == "499.00"
+
+
 async def request_asgi(app, path: str, authorization: bytes | None = None) -> int:
     messages = []
     headers = [] if authorization is None else [(b"authorization", authorization)]

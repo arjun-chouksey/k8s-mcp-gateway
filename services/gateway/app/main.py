@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from fastapi import FastAPI, HTTPException, status
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 import uvicorn
 
 from app.api.auth import create_auth_router
@@ -31,6 +35,10 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     catalog = CatalogService(
         sessions, cipher, refresh_seconds=config.upstream_refresh_seconds,
     )
+    migration_root = Path(__file__).resolve().parents[1]
+    migration_config = Config(str(migration_root / "alembic.ini"))
+    migration_config.set_main_option("script_location", str(migration_root / "alembic"))
+    migration_heads = set(ScriptDirectory.from_config(migration_config).get_heads())
     public_host = urlsplit(config.allowed_origin).netloc
     mcp_endpoint = create_mcp_endpoint(
         GatewayRouter(sessions, catalog, cipher),
@@ -76,8 +84,19 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
 
     @app.get("/readyz", include_in_schema=False)
     async def readyz() -> dict[str, str]:
-        async with engine.connect() as connection:
-            await connection.execute(text("SELECT 1"))
+        try:
+            async with engine.connect() as connection:
+                versions = set((await connection.execute(
+                    text("SELECT version_num FROM alembic_version")
+                )).scalars())
+        except SQLAlchemyError as error:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Database schema is not ready"
+            ) from error
+        if versions != migration_heads:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Database schema is not current"
+            )
         return {"status": "ok"}
 
     app.mount("/", mcp_endpoint)
@@ -86,7 +105,11 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
 
 
 def run() -> None:
-    uvicorn.run(create_app(), host="0.0.0.0", port=8000)
+    settings = AppSettings.from_env()
+    uvicorn.run(
+        create_app(settings), host="0.0.0.0", port=8000,
+        proxy_headers=True, forwarded_allow_ips=settings.forwarded_allow_ips,
+    )
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from app.mcp_gateway.adapter import (
     UpstreamProtocolError, UpstreamResultTooLargeError, UpstreamTimeoutError,
 )
 from app.mcp_gateway.catalog import CatalogService
+from app.mcp_gateway.permissions import PermissionPolicy
 from app.mcp_gateway.auditing import AuditAttempt, AuditRecorder
 from app.models import Upstream, UpstreamTool, User
 from app.security.api_keys import ApiKeyActor
@@ -30,6 +31,7 @@ class GatewayRouter:
         self._cipher = cipher
         self._adapter_factory = adapter_factory
         self._audit = AuditRecorder(sessions)
+        self._permissions = PermissionPolicy()
 
     async def list_tools(self, actor: ApiKeyActor) -> list[Tool]:
         async with self._sessions() as db:
@@ -71,7 +73,14 @@ class GatewayRouter:
                 if not upstream.enabled:
                     audit.error_summary = "Tool upstream is disabled"
                     raise MCPError(-32602, "Tool upstream is disabled")
+                if not await self._permissions.is_allowed(
+                    db, role=user.role, upstream_id=upstream.id,
+                    original_tool=tool.original_name, annotations=tool.annotations,
+                ):
+                    audit.error_summary = "Tool is not permitted for this role"
+                    raise MCPError(-32602, "Tool is not permitted for this role")
                 if upstream.status == "unreachable":
+                    self._catalog.request_refresh(upstream.id)
                     audit.outcome = "upstream_error"
                     audit.error_summary = "Upstream is currently unreachable"
                     return self._error("Upstream is currently unreachable; call was not attempted.")

@@ -10,6 +10,7 @@ from typing import Any
 
 from mcp.server import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import ToolAnnotations
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 import uvicorn
@@ -64,14 +65,14 @@ def _json(value: Any) -> Any:
 def create_mcp_server(client: WCClient) -> MCPServer:
     server = MCPServer("woocommerce-mcp", version="0.1.0")
 
-    @server.tool()
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=True))
     async def list_products(
         search: str | None = None, page: int = 1, per_page: int = 20
     ) -> list[dict[str, Any]]:
         """List a bounded page of WooCommerce products."""
         return _json(await client.list_products(ProductFilters(search=search, page=page, per_page=per_page)))
 
-    @server.tool()
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=False))
     async def create_product(
         name: str,
         regular_price: Decimal,
@@ -84,7 +85,7 @@ def create_mcp_server(client: WCClient) -> MCPServer:
         )
         return _json(await client.create_product(product))
 
-    @server.tool()
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=True))
     async def list_orders(
         status: OrderStatus | None = None,
         after: datetime | None = None,
@@ -99,12 +100,12 @@ def create_mcp_server(client: WCClient) -> MCPServer:
         )
         return _json(await client.list_orders(filters))
 
-    @server.tool()
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=True))
     async def get_order(order_id: int) -> dict[str, Any]:
         """Get one order and its line items without customer PII."""
         return _json(await client.get_order(order_id))
 
-    @server.tool()
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=False))
     async def update_order_status(order_id: int, status: OrderStatus) -> dict[str, Any]:
         """Update one order status. This write is never retried."""
         return _json(await client.update_order_status(order_id, status))
