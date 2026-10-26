@@ -147,6 +147,7 @@ async def test_five_tools_discover_execute_validate_and_bound_outputs():
             orders = await client.call_tool("list_orders", {"date": "today"})
             assert not orders.is_error
             assert "billing" not in str(orders.content) and "shipping" not in str(orders.content)
+            assert "line_items" in str(orders.content) and "Demo" in str(orders.content)
 
             order = await client.call_tool("get_order", {"order_id": 12})
             assert not order.is_error

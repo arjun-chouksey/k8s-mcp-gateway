@@ -92,6 +92,10 @@ aux-mcp:
     service:
       name: policy-mcp
       port: 8000
+  analytics:
+    service:
+      name: analytics-mcp
+      port: 8000
   probes:
     livenessPath: /healthz
     readinessPath: /readyz

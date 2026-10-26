@@ -8,3 +8,4 @@ Private upstreams remain ClusterIP-only:
   woocommerce-mcp.mcp.svc.cluster.local
   currency-mcp.mcp.svc.cluster.local
   policy-mcp.mcp.svc.cluster.local
+  analytics-mcp.mcp.svc.cluster.local

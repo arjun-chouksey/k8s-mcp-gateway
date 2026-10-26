@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "k8s-mcp-gateway-analytics-mcp"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx2==2.13.1",
+  "mcp==2.3.0",
+  "mcp-types==2.3.0",
+  "pydantic==2.14.1",
+  "starlette==1.8.0",
+  "uvicorn==0.54.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1", "pytest-asyncio==1.4.0"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/analytics_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

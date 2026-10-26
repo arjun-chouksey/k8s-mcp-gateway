@@ -109,6 +109,7 @@ class OrderSummary(APIResponseModel):
     total: Decimal
     date_created: datetime
     payment_method: str
+    line_items: list[LineItem] = Field(default_factory=list)
 
 
 class OrderDetail(OrderSummary):

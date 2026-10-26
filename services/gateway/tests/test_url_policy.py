@@ -7,6 +7,7 @@ ALLOWLIST = (
     "woocommerce-mcp.mcp.svc.cluster.local:8000",
     "currency-mcp.mcp.svc.cluster.local:8000",
     "policy-mcp.mcp.svc.cluster.local:8000",
+    "analytics-mcp.mcp.svc.cluster.local:8000",
 )
 
 
@@ -21,6 +22,9 @@ async def test_exact_internal_service_allowlist():
     assert await validate_upstream_url(
         "http://currency-mcp.mcp.svc.cluster.local:8000/mcp", ALLOWLIST,
     ) == "http://currency-mcp.mcp.svc.cluster.local:8000/mcp"
+    assert await validate_upstream_url(
+        "http://analytics-mcp.mcp.svc.cluster.local:8000/mcp", ALLOWLIST,
+    ) == "http://analytics-mcp.mcp.svc.cluster.local:8000/mcp"
     with pytest.raises(ValueError, match="must use HTTPS"):
         await validate_upstream_url("http://postgres.platform.svc.cluster.local:5432/", ALLOWLIST)
     with pytest.raises(ValueError, match="must use HTTPS"):

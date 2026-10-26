@@ -25,6 +25,7 @@ upstream:
     - woocommerce-mcp.mcp.svc.cluster.local:8000
     - currency-mcp.mcp.svc.cluster.local:8000
     - policy-mcp.mcp.svc.cluster.local:8000
+    - analytics-mcp.mcp.svc.cluster.local:8000
 probes: {livenessPath: /healthz, readinessPath: /readyz}
 resources:
   requests: {cpu: 50m, memory: 128Mi}

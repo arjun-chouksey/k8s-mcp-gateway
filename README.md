@@ -2,7 +2,7 @@
 
 A Kubernetes-native WooCommerce store and team MCP gateway. One authenticated
 Streamable HTTP endpoint aggregates a custom five-tool WooCommerce server and
-independent currency and policy servers. The React dashboard provides team,
+independent currency, policy, and sales analytics servers. The React dashboard provides team,
 key, server, audit, and AI-chat workflows; both chat and external MCP clients
 use the same gateway policy and audit path.
 
@@ -23,7 +23,7 @@ diagram shows the components actually implemented by this repository.
 ## 2. Project architecture
 
 The installation uses `store`, `mcp`, and `platform` namespaces. WordPress,
-MariaDB, PostgreSQL, the dashboard, gateway, and all three MCP servers run in
+MariaDB, PostgreSQL, the dashboard, gateway, and all four MCP servers run in
 Kubernetes. Only the shop and dashboard/gateway have Ingress routes; upstream
 MCP services remain private ClusterIP services protected by NetworkPolicy.
 
@@ -48,6 +48,7 @@ flowchart TB
            WOO["WooCommerce MCP — 5 tools"]
            CUR["Currency MCP — 2 tools"]
            POL["Policy MCP — 3 tools"]
+           ANA["Sales Analytics MCP — 4 tools"]
        end
 
        subgraph STORE["store namespace"]
@@ -72,6 +73,7 @@ flowchart TB
    GW -->|"Upstream token"| WOO
    GW --> CUR
    GW --> POL
+   GW --> ANA
    WOO -->|"Woo REST API"| WP
    WP --> DB
 
@@ -80,7 +82,7 @@ flowchart TB
    classDef storage fill:#423318,stroke:#f59e0b,color:#ffffff
 
    class UI,GW,AGENT application
-   class WOO,CUR,POL,WP upstream
+   class WOO,CUR,POL,ANA,WP upstream
    class PG,DB storage
 ```
 
@@ -94,7 +96,7 @@ forwarded upstream; each MCP server receives its own stored credential.
   durable MariaDB storage, and persistent WordPress content.
 - One authenticated Streamable HTTP MCP endpoint for dashboard chat and external
   clients.
-- Three independent private MCP servers with ten tools in total.
+- Four independent private MCP servers with fourteen tools in total.
 - Admin server management, team invitations, personal API keys, immediate key
   revocation, upstream status, and attributed audit logs.
 - Dynamic tool discovery and collision-safe names such as
@@ -110,6 +112,7 @@ forwarded upstream; each MCP server receives its own stored credential.
 | WooCommerce | `woo__list_products`, `woo__create_product`, `woo__list_orders`, `woo__get_order`, `woo__update_order_status` | Real WooCommerce REST API |
 | Currency | `currency__convert_currency`, `currency__get_demo_rates` | Fixed, versioned demonstration rates—not live FX |
 | Policy | `policy__list_store_policies`, `policy__get_store_policy`, `policy__list_products` | Versioned demonstration policies and collision fixture |
+| Sales Analytics | `analytics__summarize_sales`, `analytics__get_top_products`, `analytics__get_order_status_breakdown`, `analytics__calculate_sales_trend` | Stateless calculations over non-sensitive order fields supplied through the gateway |
 
 WooCommerce write operations are never silently retried after a timeout because
 creating a duplicate product is worse than returning an explicit uncertain
@@ -205,6 +208,19 @@ Chat calls the gateway's own `/mcp` endpoint with a short-lived token for the
 logged-in user. It cannot bypass the gateway router, authorization, or audit
 path.
 
+After deployment, register Analytics through **MCP Servers → Add server** with:
+
+```text
+Name: Sales Analytics
+Slug: analytics
+URL: http://analytics-mcp.mcp.svc.cluster.local:8000/mcp
+Authentication: Bearer
+Credential: the ANALYTICS_MCP_BEARER_TOKEN value from the mcp/aux-mcp Secret
+```
+
+Use the same dynamic registration flow for local k3d and VPS k3s. Do not expose
+the service through Ingress or give this upstream credential to team members.
+
 ### Team member and external MCP client
 
 An invited member accepts the single-use invitation, chooses a password, and
@@ -223,7 +239,7 @@ npx -y @modelcontextprotocol/inspector
 ```
 
 The personal key is displayed once. Revoking it rejects the next MCP request.
-Users never configure or receive the WooCommerce, Currency, or Policy upstream
+Users never configure or receive the WooCommerce, Currency, Policy, or Analytics upstream
 credentials.
 
 ### Example AI chat prompts
@@ -232,7 +248,17 @@ credentials.
 Create a published virtual product named Urumi Mug priced at 499 INR.
 What orders came in today?
 List today's order totals and convert the sum from INR to EUR using demo rates.
+Fetch all order pages, summarize booked sales, and show the top products by revenue.
 ```
+
+The analytics workflow is cross-server composition: chat first calls
+`woo__list_orders`, passes only order ID, status, currency, total, creation date,
+and line items to `analytics__summarize_sales` or
+`analytics__get_top_products`, and may then call Currency for an explicitly
+labelled demo-rate conversion. Analytics has no store or database connection.
+Because Woo order listing is paginated, results cover only the supplied pages;
+the tools state this in every response and must not present a partial page as a
+complete business total.
 
 ## 6. Secrets and security boundaries
 
@@ -245,7 +271,7 @@ secret values. Create these resources before installation:
 | `store` | `store-wordpress` | `database`, `username`, `password` |
 | `store` | `store-wordpress-admin` | `username`, `password`, `email` |
 | `mcp` | `woo-mcp` | `MCP_BEARER_TOKEN`, `WOOCOMMERCE_BASE_URL`, `WOOCOMMERCE_OAUTH_BASE_URL`, `WOOCOMMERCE_CONSUMER_KEY`, `WOOCOMMERCE_CONSUMER_SECRET` |
-| `mcp` | `aux-mcp` | `CURRENCY_MCP_BEARER_TOKEN`, `POLICY_MCP_BEARER_TOKEN` |
+| `mcp` | `aux-mcp` | `CURRENCY_MCP_BEARER_TOKEN`, `POLICY_MCP_BEARER_TOKEN`, `ANALYTICS_MCP_BEARER_TOKEN` |
 | `platform` | `platform-postgres` | `database`, `username`, `password`, `database-url` |
 | `platform` | `gateway` | `api-key-pepper`, `upstream-credential-key`, `internal-jwt-secret`, `groq-api-key` |
 | `platform` | `gateway-bootstrap-admin` | `email`, `password` |
@@ -310,7 +336,7 @@ The mandatory local flow has been exercised with two users:
 1. User A created a real WooCommerce product through dashboard chat.
 2. A customer placed a Cash on Delivery order, and chat retrieved the same order.
 3. User B connected through one gateway URL and personal key, discovered all
-   three upstreams, and called both WooCommerce and Currency tools.
+   the original three upstreams, and called both WooCommerce and Currency tools.
 4. Member access to admin operations was denied.
 5. Disabling a server removed its tools and denied a cached alias.
 6. Scaling Currency to zero made it unreachable while WooCommerce continued
@@ -318,10 +344,12 @@ The mandatory local flow has been exercised with two users:
 7. Revoking User B's key returned `401` on the next request.
 8. Audit rows contained the correct user, server, tool, duration, and outcome.
 
-Current automated checks include 52 gateway tests, 25 WooCommerce/auxiliary MCP
-tests, 10 dashboard tests, a dashboard production build, Helm lint/template
-parity, live MCP Inspector checks for all three servers, storefront smoke tests,
-and a NetworkPolicy denial test.
+The Sales Analytics extension has automated unit, authenticated Streamable HTTP,
+gateway registration/audit, and Helm render coverage. It was also deployed to
+local k3d and verified through the unified gateway with MCP Inspector and a real
+Groq chat run composing WooCommerce with Analytics. Disable, scale-to-zero
+isolation, recovery, and an unauthorized-Pod NetworkPolicy denial were exercised.
+This is local evidence only; no live VPS Analytics deployment is claimed.
 
 Useful operator checks:
 
@@ -388,7 +416,7 @@ helm template urumi charts/platform -n platform \
    ```
 
 9. Verify HTTPS, complete the supported WooCommerce REST-key rotation, register
-   the currency and policy servers through the dashboard, and run the required
+   the currency, policy, and analytics servers through the dashboard, and run the required
    two-user acceptance flow.
 
 No VPS, DNS record, certificate, or registry package is provisioned by this
@@ -424,7 +452,7 @@ charts/                 Umbrella and component Helm charts
 infra/                  Namespace manifests and public infrastructure notes
 services/gateway/       FastAPI REST API, MCP gateway, auth, chat, audit, migrations
 services/woo-mcp/       Custom five-tool WooCommerce MCP server
-services/aux-mcp/       Independent Currency and Policy MCP servers
+services/aux-mcp/       Independent Currency, Policy, and Analytics MCP servers
 web/dashboard/          React dashboard and AI chat interface
 docs/THREAT_MODEL.md    Public security analysis and residual risks
 docs/images/            Kubernetes learning diagram

@@ -7,7 +7,9 @@ COPY currency/pyproject.toml ./currency/pyproject.toml
 COPY currency/src ./currency/src
 COPY policy/pyproject.toml ./policy/pyproject.toml
 COPY policy/src ./policy/src
-RUN pip install --no-cache-dir ./currency ./policy
+COPY analytics/pyproject.toml ./analytics/pyproject.toml
+COPY analytics/src ./analytics/src
+RUN pip install --no-cache-dir ./currency ./policy ./analytics
 
 USER 65532:65532
 EXPOSE 8000

@@ -34,7 +34,7 @@ spec:
             matchExpressions:
               - key: app.kubernetes.io/name
                 operator: In
-                values: [woo-mcp, currency-mcp, policy-mcp]
+                values: [woo-mcp, currency-mcp, policy-mcp, analytics-mcp]
       ports:
         - {protocol: TCP, port: {{ .Values.upstream.port }}}
     - to:

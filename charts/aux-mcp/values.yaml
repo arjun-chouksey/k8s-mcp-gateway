@@ -6,6 +6,8 @@ currency:
   service: {name: currency-mcp, port: 8000}
 policy:
   service: {name: policy-mcp, port: 8000}
+analytics:
+  service: {name: analytics-mcp, port: 8000}
 probes: {livenessPath: /healthz, readinessPath: /readyz}
 resources:
   requests: {cpu: 25m, memory: 96Mi}

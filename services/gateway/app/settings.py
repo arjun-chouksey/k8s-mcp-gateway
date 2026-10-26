@@ -40,6 +40,7 @@ class AppSettings:
         "woocommerce-mcp.mcp.svc.cluster.local:8000",
         "currency-mcp.mcp.svc.cluster.local:8000",
         "policy-mcp.mcp.svc.cluster.local:8000",
+        "analytics-mcp.mcp.svc.cluster.local:8000",
     )
     session_ttl_seconds: int = 28_800
     invite_ttl_seconds: int = 86_400
@@ -80,7 +81,8 @@ class AppSettings:
                 "UPSTREAM_INTERNAL_ALLOWLIST",
                 "woocommerce-mcp.mcp.svc.cluster.local:8000,"
                 "currency-mcp.mcp.svc.cluster.local:8000,"
-                "policy-mcp.mcp.svc.cluster.local:8000",
+                "policy-mcp.mcp.svc.cluster.local:8000,"
+                "analytics-mcp.mcp.svc.cluster.local:8000",
             ).split(",")
         )))
         if min(session_ttl, invite_ttl, max_failures, window, refresh_seconds, chat_max_rounds, chat_timeout) <= 0:

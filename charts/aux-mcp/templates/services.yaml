@@ -1,5 +1,5 @@
 {{- $_ := required "aux-mcp.existingSecret is required" .Values.existingSecret -}}
-{{- range $name, $server := dict "currency" .Values.currency "policy" .Values.policy }}
+{{- range $name, $server := dict "currency" .Values.currency "policy" .Values.policy "analytics" .Values.analytics }}
 apiVersion: v1
 kind: Service
 metadata:

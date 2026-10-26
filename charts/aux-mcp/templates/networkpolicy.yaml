@@ -10,7 +10,7 @@ spec:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
-        values: [currency-mcp, policy-mcp]
+        values: [currency-mcp, policy-mcp, analytics-mcp]
   policyTypes: [Ingress]
   ingress:
     - from:

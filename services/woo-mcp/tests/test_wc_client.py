@@ -158,6 +158,7 @@ def test_order_methods_project_pii_and_update_status_once():
 
         async with make_client(handler) as client:
             orders = await client.list_orders(OrderFilters(status=OrderStatus.PROCESSING))
+            assert orders[0].line_items[0].product_id == ORDER["line_items"][0]["product_id"]
             order = await client.get_order(orders[0].id)
             updated = await client.update_order_status(order.id, OrderStatus.COMPLETED)
             assert updated.status == "completed"
