@@ -474,7 +474,27 @@ node, disk, or provider failure can take down every workload. Off-server backups
 monitoring, OS security updates, firewall rules for 22/80/443, and tested restore
 procedures are operational requirements for a real deployment.
 
-## 10. Repository map
+## 10. Attempted bonus and stand-out items
+
+| Assignment item | Status | Where to find it |
+| --- | --- | --- |
+| Multi-store provisioning bonus | Not attempted | The project intentionally keeps one WooCommerce store and prioritizes the mandatory two-user flow. |
+| Production-like VPS deployment | Implemented and live-verified | Section 8, `charts/platform/values-vps.yaml`, and the live HTTPS addresses in Section 4. |
+| Tool permissions | Implemented | `services/gateway/app/mcp_gateway/permissions.py` and the role-aware checks applied during both `tools/list` and `tools/call`. Members receive the read-only Woo tool set; administrators can use the approved write tools. |
+| OAuth on the gateway | Not attempted | External clients authenticate with revocable personal bearer keys. |
+| Handling many tools | Not attempted as a separate search/execute layer | The current catalog contains fourteen collision-safe aliases across four servers. |
+| Hosted MCP servers by container image | Not attempted | Administrators register existing Streamable HTTP endpoints; the platform does not deploy arbitrary images from the dashboard. |
+| Security hardening | Implemented | Section 6, `docs/THREAT_MODEL.md`, URL/redirect validation, encrypted upstream credentials, non-root containers, NetworkPolicies, Secret references, and negative authorization tests. |
+| Scaling | Not attempted beyond the single gateway replica | The gateway is stateless and database-backed, but multi-replica coordination is not claimed as verified. |
+| Observability | Partially implemented | The dashboard reports upstream state and bounded errors, while audit records capture actor, server, tool, channel, outcome, and duration. Prometheus-compatible metrics are not implemented. |
+| Upgrades and rollback | Documented and Helm-render verified | Section 9 describes Helm history, upgrade, rollback, database-migration limits, and backup expectations. A complete off-node backup restore has not been rehearsed. |
+
+Sales Analytics is an additional fourth independent MCP server beyond the
+mandatory three-server baseline. It is a stateless in-cluster server registered
+through the same dynamic gateway flow; it is not the assignment's hosted-server
+provisioning feature or multi-store bonus.
+
+## 11. Repository map
 
 ```text
 charts/                 Umbrella and component Helm charts
@@ -489,7 +509,9 @@ docs/images/            Kubernetes learning diagram
 
 ### Current boundary
 
-The complete mandatory application works locally on k3d. The same Helm templates
-render with the k3s values, but this repository does not yet claim a live public
-VPS, issued TLS certificates, or a tested off-node backup restore. Those claims
-remain pending until they are exercised on real infrastructure.
+The complete mandatory application works locally on k3d and has also been
+deployed with the same Helm templates to the single-node k3s VPS described in
+Section 8. The live `nip.io` routes and Let's Encrypt certificates were verified.
+This remains a demonstration deployment rather than a highly available
+production service. A complete off-node backup-and-restore rehearsal has not
+been performed, and multi-store provisioning was not attempted.
