@@ -127,7 +127,8 @@ result.
   free disk for the documented single-node k3s deployment.
 - Four application images built from this repository: `gateway`, `woo-mcp`,
   `aux-mcp`, and `dashboard`.
-- A Groq API key for dashboard chat and a domain you control for VPS TLS.
+- A Groq API key for dashboard chat. A custom domain is optional; the verified
+  demo deployment uses free `nip.io` hostnames with Let's Encrypt TLS.
 
 All image tags in the VPS values are immutable release labels rather than
 `latest`. Before a VPS install, publish the four `0.1.0` images to the configured
@@ -185,6 +186,23 @@ Open `http://shop.127.0.0.1.nip.io:8080` and
 | Team dashboard | <http://app.127.0.0.1.nip.io:8080> |
 | Unified MCP endpoint | `http://app.127.0.0.1.nip.io:8080/mcp` |
 
+### Live HTTPS demo
+
+The same umbrella chart is running on a single-node GCP k3s VM. The public IP
+is reserved, HTTP redirects permanently to HTTPS, and cert-manager renews the
+Let's Encrypt certificates.
+
+| Surface | Live address |
+| --- | --- |
+| Storefront | <https://shop.35.254.101.77.nip.io> |
+| WordPress admin | <https://shop.35.254.101.77.nip.io/wp-admin> |
+| Team dashboard | <https://app.35.254.101.77.nip.io> |
+| Unified MCP endpoint | `https://app.35.254.101.77.nip.io/mcp` |
+
+The pages are publicly reachable, while dashboard, WordPress, and MCP actions
+still require their respective account or bearer credentials. PostgreSQL,
+MariaDB, and the four upstream MCP services have no public Ingress.
+
 ## 5. Use the application
 
 ### Store customer
@@ -231,6 +249,9 @@ Transport: Streamable HTTP
 URL: http://app.127.0.0.1.nip.io:8080/mcp
 Header: Authorization: Bearer <personal-gateway-key>
 ```
+
+For the live deployment, use
+`https://app.35.254.101.77.nip.io/mcp` with the same Authorization header.
 
 For MCP Inspector, start the client and enter the values above:
 
@@ -345,11 +366,12 @@ The mandatory local flow has been exercised with two users:
 8. Audit rows contained the correct user, server, tool, duration, and outcome.
 
 The Sales Analytics extension has automated unit, authenticated Streamable HTTP,
-gateway registration/audit, and Helm render coverage. It was also deployed to
-local k3d and verified through the unified gateway with MCP Inspector and a real
-Groq chat run composing WooCommerce with Analytics. Disable, scale-to-zero
-isolation, recovery, and an unauthorized-Pod NetworkPolicy denial were exercised.
-This is local evidence only; no live VPS Analytics deployment is claimed.
+gateway registration/audit, and Helm render coverage. It was deployed to local
+k3d and the live k3s VPS, where all four servers expose fourteen tools through
+the unified gateway. The live HTTPS checks covered secure dashboard login, real
+Woo product access through MCP, Groq chat with a visible MCP tool trace,
+storefront/cart/checkout rendering, an unauthorized-Pod NetworkPolicy denial,
+and upstream scale-to-zero isolation with recovery.
 
 Useful operator checks:
 
@@ -363,6 +385,12 @@ helm template urumi charts/platform -n platform \
 ```
 
 ## 8. Single-node k3s VPS deployment
+
+The verified demo runs on k3s `v1.35.5+k3s1` at the live addresses above. It
+uses the same chart templates as local k3d, environment-specific ignored values
+and pre-created Secrets, a reserved GCP address, bundled Traefik, cert-manager
+`v1.21.3`, and two namespace-scoped Let's Encrypt TLS Secrets. The following
+steps document how to reproduce that deployment with different hosts.
 
 1. Point `shop.example.com` and `app.example.com` A/AAAA records at the VPS,
    replace those placeholders in `charts/platform/values-vps.yaml`, and wait
@@ -419,8 +447,9 @@ helm template urumi charts/platform -n platform \
    the currency, policy, and analytics servers through the dashboard, and run the required
    two-user acceptance flow.
 
-No VPS, DNS record, certificate, or registry package is provisioned by this
-repository. A documented render is not evidence of a live VPS deployment.
+Cloud resources, DNS, certificates, and credentials are intentionally not
+created by the application chart. The current live deployment was provisioned
+out of band and then verified through the public HTTPS routes.
 
 ## 9. Upgrades, rollback, and backups
 
