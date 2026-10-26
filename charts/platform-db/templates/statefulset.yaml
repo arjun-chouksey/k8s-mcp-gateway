@@ -16,7 +16,13 @@ spec:
       labels: {app.kubernetes.io/name: postgres, app.kubernetes.io/part-of: k8s-mcp-gateway}
     spec:
       automountServiceAccountToken: false
-      securityContext: {seccompProfile: {type: RuntimeDefault}}
+      securityContext:
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        fsGroupChangePolicy: OnRootMismatch
+        appArmorProfile: {type: {{ .Values.securityContext.appArmorProfileType | default "RuntimeDefault" }}}
+        seccompProfile: {type: {{ .Values.securityContext.seccompProfileType | default "RuntimeDefault" }}}
       containers:
         - name: postgres
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -42,7 +48,8 @@ spec:
             failureThreshold: 6
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          securityContext: {allowPrivilegeEscalation: false}
+          securityContext:
+            runAsNonRoot: true
           volumeMounts: [{name: postgres-data, mountPath: /var/lib/postgresql/data}]
   volumeClaimTemplates:
     - metadata:

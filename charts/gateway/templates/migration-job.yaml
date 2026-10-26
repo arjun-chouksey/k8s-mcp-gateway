@@ -16,6 +16,37 @@ spec:
       restartPolicy: Never
       automountServiceAccountToken: false
       securityContext: {seccompProfile: {type: RuntimeDefault}}
+      initContainers:
+        - name: wait-for-database
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          command:
+            - python
+            - -c
+            - |
+              import os, time
+              import psycopg
+              database_url = os.environ["DATABASE_URL"].replace(
+                  "postgresql+psycopg://", "postgresql://", 1
+              )
+              for attempt in range(120):
+                  try:
+                      with psycopg.connect(database_url, connect_timeout=3):
+                          raise SystemExit(0)
+                  except psycopg.OperationalError:
+                      if attempt == 119:
+                          raise
+                      time.sleep(2)
+          env:
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: {{ .Values.databaseExistingSecret }}, key: database-url}}
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
       containers:
         - name: migrate
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

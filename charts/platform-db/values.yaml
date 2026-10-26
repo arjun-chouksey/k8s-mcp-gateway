@@ -5,6 +5,7 @@ global:
 image: {repository: postgres, tag: 17.6-alpine}
 service: {name: postgres, port: 5432}
 existingSecret: platform-postgres
+securityContext: {appArmorProfileType: RuntimeDefault, seccompProfileType: RuntimeDefault}
 persistence: {size: 2Gi}
 probes: {command: pg_isready}
 resources:

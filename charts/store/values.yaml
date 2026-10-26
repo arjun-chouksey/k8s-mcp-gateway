@@ -36,6 +36,7 @@ mariadb:
   image: {repository: mariadb, tag: 11.8.3}
   service: {name: mariadb, port: 3306}
   existingSecret: store-mariadb
+  securityContext: {appArmorProfileType: RuntimeDefault, seccompProfileType: RuntimeDefault}
   persistence: {size: 2Gi}
   probes: {command: healthcheck.sh}
   resources:

@@ -23,8 +23,14 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        appArmorProfile:
+          type: {{ .Values.mariadb.securityContext.appArmorProfileType | default "RuntimeDefault" }}
         seccompProfile:
-          type: RuntimeDefault
+          type: {{ .Values.mariadb.securityContext.seccompProfileType | default "RuntimeDefault" }}
       containers:
         - name: mariadb
           image: "{{ .Values.mariadb.image.repository }}:{{ .Values.mariadb.image.tag }}"
@@ -72,7 +78,7 @@ spec:
           resources:
             {{- toYaml .Values.mariadb.resources | nindent 12 }}
           securityContext:
-            allowPrivilegeEscalation: false
+            runAsNonRoot: true
           volumeMounts:
             - name: mariadb-data
               mountPath: /var/lib/mysql
